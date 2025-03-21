@@ -1,28 +1,25 @@
-package short_urls_controller
+package controllers
 
 import (
-	"github.com/gururuby/shortener/internal/app/models/short_url_model"
-	"github.com/gururuby/shortener/internal/app/repos/short_urls_repo"
+	"github.com/gururuby/shortener/internal/app/repos"
 	"io"
 	"net/http"
 	"strings"
 )
 
-var repo = short_urls_repo.ShortUrlsRepo{
-	Data: map[string]short_url_model.ShortUrl{},
-}
+var repo = repos.NewShortURLsRepo()
 
-func Create(w http.ResponseWriter, r *http.Request) {
+func ShortURLCreate(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		baseUrl, err := io.ReadAll(r.Body)
+		BaseURL, err := io.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		}
 
-		shortUrl := repo.Create(string(baseUrl))
+		ShortURL := repo.CreateShortURL(string(BaseURL))
 
 		w.WriteHeader(http.StatusCreated)
-		_, err = io.WriteString(w, shortUrl)
+		_, err = io.WriteString(w, ShortURL)
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
 		}
@@ -31,12 +28,12 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Show(w http.ResponseWriter, r *http.Request) {
+func ShortURLShow(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		id := strings.TrimPrefix(r.URL.Path, "/")
-		baseUrl := repo.Find(id)
+		BaseURL := repo.FindShortURL(id)
 
-		w.Header().Set("Location", baseUrl)
+		w.Header().Set("Location", BaseURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
 		http.Error(w, "Bad request", http.StatusBadRequest)

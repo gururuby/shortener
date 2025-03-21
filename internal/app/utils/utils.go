@@ -1,11 +1,11 @@
-package alias_generator
+package utils
 
 import (
 	"math/rand"
 	"time"
 )
 
-func Run(length int) string {
+func GenerateRandomString(length int) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	chars := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

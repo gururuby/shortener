@@ -1,14 +1,9 @@
 package main
 
 import (
-	appConfig "github.com/gururuby/shortener/internal/infra/config"
-	"github.com/gururuby/shortener/internal/infra/http_server"
+	"github.com/gururuby/shortener/internal/app"
 )
 
-var config = appConfig.Config{
-	ServerAddress: "localhost:8080",
-}
-
 func main() {
-	http_server.Run(&config)
+	app.Run()
 }
