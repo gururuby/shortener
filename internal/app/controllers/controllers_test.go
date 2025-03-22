@@ -138,14 +138,14 @@ func TestShortURLShow(t *testing.T) {
 	tests := []struct {
 		name    string
 		storage storage.StorageInterface
-		baseUrl string
+		baseURL string
 		send    request
 		want    response
 	}{
 		{
 			name:    "when successfully find base url by alias",
 			storage: mockStorage,
-			baseUrl: "https://example.com",
+			baseURL: "https://example.com",
 			send: request{
 				method: http.MethodGet,
 				path:   "/mock_alias",
@@ -158,7 +158,7 @@ func TestShortURLShow(t *testing.T) {
 		{
 			name:    "when alias was not passed",
 			storage: mockStorage,
-			baseUrl: "https://example.com",
+			baseURL: "https://example.com",
 			send: request{
 				method: http.MethodGet,
 				path:   "/",
@@ -172,7 +172,7 @@ func TestShortURLShow(t *testing.T) {
 		{
 			name:    "when base URL was not found",
 			storage: mockStorage,
-			baseUrl: "https://example.com",
+			baseURL: "https://example.com",
 			send: request{
 				method: http.MethodGet,
 				path:   "/unknown",
@@ -185,7 +185,7 @@ func TestShortURLShow(t *testing.T) {
 		},
 		{
 			name:    "when request not allowed HTTP method",
-			baseUrl: "https://example.com",
+			baseURL: "https://example.com",
 			storage: mockStorage,
 			send: request{
 				method: http.MethodPost,
@@ -201,7 +201,7 @@ func TestShortURLShow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStorage.CreateShortURL(tt.baseUrl)
+			mockStorage.CreateShortURL(tt.baseURL)
 
 			request := httptest.NewRequest(tt.send.method, tt.send.path, nil)
 			w := httptest.NewRecorder()

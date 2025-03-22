@@ -10,7 +10,7 @@ import (
 func ShortURLCreate(storage storage.StorageInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			input, err := io.ReadAll(r.Body)
+			input, _ := io.ReadAll(r.Body)
 			baseURL := string(input)
 
 			if baseURL == "" {
@@ -20,7 +20,7 @@ func ShortURLCreate(storage storage.StorageInterface) http.HandlerFunc {
 
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
-				_, err = io.WriteString(w, ShortURL)
+				_, err := io.WriteString(w, ShortURL)
 				if err != nil {
 					http.Error(w, "Something went wrong", http.StatusInternalServerError)
 				}
