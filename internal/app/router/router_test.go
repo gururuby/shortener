@@ -58,6 +58,7 @@ func TestRouter(t *testing.T) {
 	}
 	for _, v := range testTable {
 		resp, get := testRequest(t, ts, v.method, v.body, v.url)
+		resp.Body.Close()
 		assert.Equal(t, v.status, resp.StatusCode)
 		if v.want != "" {
 			assert.Equal(t, v.want, get)
