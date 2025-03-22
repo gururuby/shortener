@@ -21,8 +21,8 @@ func (repo *ShortURLsRepo) CreateShortURL(BaseURL string) string {
 	return shortURL.AliasURL()
 }
 
-func (repo *ShortURLsRepo) FindShortURL(alias string) string {
-	shortURL := repo.Data[alias]
+func (repo *ShortURLsRepo) FindShortURL(alias string) (string, bool) {
+	shortURL, ok := repo.Data[alias]
 
-	return shortURL.BaseURL
+	return shortURL.BaseURL, ok
 }
