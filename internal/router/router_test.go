@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -40,14 +39,13 @@ func TestRouter(t *testing.T) {
 		method string
 		body   io.Reader
 		want   string
-		match  string
 		status int
 	}{
 		{
 			url:    "/",
 			method: "POST",
 			body:   strings.NewReader("https://ya.ru"),
-			match:  `\Ahttp:\/\/localhost:8080\/mock_alias\z`,
+			want:   "localhost:8080/mock_alias",
 			status: http.StatusCreated,
 		},
 		{
@@ -69,10 +67,5 @@ func TestRouter(t *testing.T) {
 		if v.want != "" {
 			assert.Equal(t, v.want, get)
 		}
-
-		if v.match != "" {
-			assert.Regexp(t, regexp.MustCompile(v.match), get)
-		}
-
 	}
 }
