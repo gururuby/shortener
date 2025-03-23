@@ -15,7 +15,7 @@ func Router(config *config.Config, storage storage.StorageInterface) chi.Router 
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	router.Post("/", controllers.ShortURLCreate(config.PublicAddress, storage))
+	router.Post("/", controllers.ShortURLCreate(config.ServerBaseURL, storage))
 	router.Get("/{alias}", controllers.ShortURLShow(storage))
 
 	return router

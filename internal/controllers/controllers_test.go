@@ -44,7 +44,7 @@ func TestShortURLCreate(t *testing.T) {
 			},
 			want: response{
 				code:        http.StatusCreated,
-				body:        "localhost:8080/mock_alias",
+				body:        "http://localhost:8080/mock_alias",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -82,7 +82,7 @@ func TestShortURLCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.send.method, tt.send.path, tt.send.body)
 			w := httptest.NewRecorder()
-			ShortURLCreate(config.PublicAddress, tt.storage)(w, request)
+			ShortURLCreate(config.ServerBaseURL, tt.storage)(w, request)
 
 			res := w.Result()
 
@@ -180,7 +180,7 @@ func TestShortURLShow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStorage.CreateShortURL(config.PublicAddress, tt.baseURL)
+			mockStorage.CreateShortURL(config.ServerBaseURL, tt.baseURL)
 
 			request := httptest.NewRequest(tt.send.method, tt.send.path, nil)
 			w := httptest.NewRecorder()

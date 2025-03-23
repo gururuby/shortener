@@ -14,11 +14,11 @@ func NewShortURLsRepo() *ShortURLsRepo {
 	}
 }
 
-func (repo *ShortURLsRepo) CreateShortURL(publicAddress string, BaseURL string) string {
+func (repo *ShortURLsRepo) CreateShortURL(serverBaseURL string, BaseURL string) string {
 	shortURL := models.NewShortURL(BaseURL)
 	repo.Data[shortURL.Alias] = shortURL
 
-	return shortURL.AliasURL(publicAddress)
+	return shortURL.AliasURL(serverBaseURL)
 }
 
 func (repo *ShortURLsRepo) FindShortURL(alias string) (string, bool) {

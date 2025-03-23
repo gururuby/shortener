@@ -16,7 +16,7 @@ func NewShortURL(baseURL string) ShortURL {
 	}
 }
 
-func (s *ShortURL) AliasURL(publicAddress string) string {
-	return publicAddress + "/" + s.Alias
+func (s *ShortURL) AliasURL(serverBaseURL string) string {
+	return serverBaseURL + "/" + s.Alias
 
 }

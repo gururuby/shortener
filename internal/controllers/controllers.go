@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ShortURLCreate(publicAddress string, storage storage.StorageInterface) http.HandlerFunc {
+func ShortURLCreate(serverBaseURL string, storage storage.StorageInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			input, _ := io.ReadAll(r.Body)
@@ -16,7 +16,7 @@ func ShortURLCreate(publicAddress string, storage storage.StorageInterface) http
 			if baseURL == "" {
 				http.Error(w, "Empty base URL, please specify URL", http.StatusUnprocessableEntity)
 			} else {
-				ShortURL := storage.CreateShortURL(publicAddress, baseURL)
+				ShortURL := storage.CreateShortURL(serverBaseURL, baseURL)
 
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
