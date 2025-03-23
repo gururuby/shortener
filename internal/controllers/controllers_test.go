@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	appConfig "github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/mocks"
 	"github.com/gururuby/shortener/internal/storage"
 	"github.com/stretchr/testify/assert"
@@ -13,8 +12,8 @@ import (
 )
 
 func TestShortURLCreate(t *testing.T) {
-	mockStorage := mocks.NewShortURLsRepo()
-	config := appConfig.NewConfig()
+	mockStorage := mocks.NewMockShortURLsRepo()
+	config := mocks.NewMockConfig()
 
 	type response struct {
 		code        int
@@ -30,7 +29,7 @@ func TestShortURLCreate(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		storage storage.StorageInterface
+		storage storage.IStorage
 		send    request
 		want    response
 	}{
@@ -82,7 +81,7 @@ func TestShortURLCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.send.method, tt.send.path, tt.send.body)
 			w := httptest.NewRecorder()
-			ShortURLCreate(config.ServerBaseURL, tt.storage)(w, request)
+			ShortURLCreate(config.BaseURL, tt.storage)(w, request)
 
 			res := w.Result()
 
@@ -99,8 +98,8 @@ func TestShortURLCreate(t *testing.T) {
 }
 
 func TestShortURLShow(t *testing.T) {
-	mockStorage := mocks.NewShortURLsRepo()
-	config := appConfig.NewConfig()
+	mockStorage := mocks.NewMockShortURLsRepo()
+	config := mocks.NewMockConfig()
 
 	type response struct {
 		code        int
@@ -116,7 +115,7 @@ func TestShortURLShow(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		storage storage.StorageInterface
+		storage storage.IStorage
 		baseURL string
 		send    request
 		want    response
@@ -180,7 +179,7 @@ func TestShortURLShow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStorage.CreateShortURL(config.ServerBaseURL, tt.baseURL)
+			mockStorage.CreateShortURL(config.BaseURL, tt.baseURL)
 
 			request := httptest.NewRequest(tt.send.method, tt.send.path, nil)
 			w := httptest.NewRecorder()

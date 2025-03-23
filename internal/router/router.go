@@ -8,14 +8,14 @@ import (
 	"github.com/gururuby/shortener/internal/storage"
 )
 
-func Router(config *config.Config, storage storage.StorageInterface) chi.Router {
+func NewRouter(config *config.Config, storage storage.IStorage) chi.Router {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	router.Post("/", controllers.ShortURLCreate(config.ServerBaseURL, storage))
+	router.Post("/", controllers.ShortURLCreate(config.BaseURL, storage))
 	router.Get("/{alias}", controllers.ShortURLShow(storage))
 
 	return router

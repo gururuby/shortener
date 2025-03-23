@@ -7,16 +7,16 @@ import (
 	"strings"
 )
 
-func ShortURLCreate(serverBaseURL string, storage storage.StorageInterface) http.HandlerFunc {
+func ShortURLCreate(baseURL string, storage storage.IStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			input, _ := io.ReadAll(r.Body)
-			baseURL := string(input)
+			source := string(input)
 
-			if baseURL == "" {
+			if source == "" {
 				http.Error(w, "Empty base URL, please specify URL", http.StatusUnprocessableEntity)
 			} else {
-				ShortURL := storage.CreateShortURL(serverBaseURL, baseURL)
+				ShortURL := storage.CreateShortURL(baseURL, source)
 
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)
@@ -31,7 +31,7 @@ func ShortURLCreate(serverBaseURL string, storage storage.StorageInterface) http
 	}
 }
 
-func ShortURLShow(storage storage.StorageInterface) http.HandlerFunc {
+func ShortURLShow(storage storage.IStorage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			alias := strings.TrimPrefix(r.URL.Path, "/")

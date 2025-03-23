@@ -1,8 +1,9 @@
-package router
+package app
 
 import (
 	appConfig "github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/mocks"
+	"github.com/gururuby/shortener/internal/router"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -12,7 +13,7 @@ import (
 	"testing"
 )
 
-func testRequest(t *testing.T, ts *httptest.Server, method string, body io.Reader, path string) (*http.Response, string) {
+func testRequest(t *testing.T, ts *httptest.Server, method string, path string, body io.Reader) (*http.Response, string) {
 	req, err := http.NewRequest(method, ts.URL+path, body)
 	require.NoError(t, err)
 
@@ -27,41 +28,39 @@ func testRequest(t *testing.T, ts *httptest.Server, method string, body io.Reade
 }
 
 func TestRouter(t *testing.T) {
+	storage := mocks.NewMockShortURLsRepo()
 	config := appConfig.NewConfig()
-
-	repo := mocks.NewShortURLsRepo()
-
-	ts := httptest.NewServer(Router(config, repo))
+	ts := httptest.NewServer(router.NewRouter(config, storage))
 	defer ts.Close()
 
 	var testTable = []struct {
-		url    string
+		path   string
 		method string
 		body   io.Reader
 		want   string
 		status int
 	}{
 		{
-			url:    "/",
+			path:   "/",
 			method: "POST",
 			body:   strings.NewReader("https://ya.ru"),
 			want:   "http://localhost:8080/mock_alias",
 			status: http.StatusCreated,
 		},
 		{
-			url:    "/",
+			path:   "/",
 			method: "GET",
 			status: http.StatusMethodNotAllowed,
 		},
 		{
-			url:    "/unknown",
+			path:   "/unknown",
 			method: "GET",
 			want:   "URL was not found\n",
 			status: http.StatusNotFound,
 		},
 	}
 	for _, v := range testTable {
-		resp, get := testRequest(t, ts, v.method, v.body, v.url)
+		resp, get := testRequest(t, ts, v.method, v.path, v.body)
 		resp.Body.Close()
 		assert.Equal(t, v.status, resp.StatusCode)
 		if v.want != "" {

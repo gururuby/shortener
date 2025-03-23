@@ -5,18 +5,18 @@ import (
 )
 
 type ShortURL struct {
-	BaseURL string
-	Alias   string
+	Source string
+	Alias  string
 }
 
-func NewShortURL(baseURL string) ShortURL {
+func NewShortURL(source string) ShortURL {
 	return ShortURL{
-		Alias:   utils.GenerateRandomString(5),
-		BaseURL: baseURL,
+		Alias:  utils.GenerateRandomString(5),
+		Source: source,
 	}
 }
 
-func (s *ShortURL) AliasURL(serverBaseURL string) string {
-	return serverBaseURL + "/" + s.Alias
+func (s *ShortURL) AliasURL(baseURL string) string {
+	return baseURL + "/" + s.Alias
 
 }
