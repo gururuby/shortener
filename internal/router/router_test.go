@@ -47,7 +47,7 @@ func TestRouter(t *testing.T) {
 			url:    "/",
 			method: "POST",
 			body:   strings.NewReader("https://ya.ru"),
-			match:  `\Ahttp:\/\/localhost:8081\/mock_alias\z`,
+			match:  `\Ahttp:\/\/localhost:8080\/mock_alias\z`,
 			status: http.StatusCreated,
 		},
 		{

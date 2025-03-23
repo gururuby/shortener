@@ -44,7 +44,7 @@ func TestShortURLCreate(t *testing.T) {
 			},
 			want: response{
 				code:        http.StatusCreated,
-				body:        "http://localhost:8081/mock_alias",
+				body:        "http://localhost:8080/mock_alias",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
