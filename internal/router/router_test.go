@@ -1,6 +1,8 @@
 package router
 
 import (
+	appConfig "github.com/gururuby/shortener/internal/config"
+	"github.com/gururuby/shortener/internal/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -26,7 +28,11 @@ func testRequest(t *testing.T, ts *httptest.Server, method string, body io.Reade
 }
 
 func TestRouter(t *testing.T) {
-	ts := httptest.NewServer(Router())
+	config := appConfig.NewConfig()
+
+	repo := mocks.NewShortURLsRepo()
+
+	ts := httptest.NewServer(Router(config, repo))
 	defer ts.Close()
 
 	var testTable = []struct {
@@ -41,7 +47,7 @@ func TestRouter(t *testing.T) {
 			url:    "/",
 			method: "POST",
 			body:   strings.NewReader("https://ya.ru"),
-			match:  `\Ahttp:\/\/localhost:8080\/\w{5}\z`,
+			match:  `\Ahttp:\/\/localhost:8081\/mock_alias\z`,
 			status: http.StatusCreated,
 		},
 		{

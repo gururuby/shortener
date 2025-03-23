@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"github.com/gururuby/shortener/internal/app/models"
-	"github.com/gururuby/shortener/internal/app/storage"
+	appConfig "github.com/gururuby/shortener/internal/config"
+	"github.com/gururuby/shortener/internal/mocks"
+	"github.com/gururuby/shortener/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
@@ -11,32 +12,9 @@ import (
 	"testing"
 )
 
-type MockShortURLsRepo struct {
-	Data map[string]models.ShortURL
-}
-
-func NewShortURLsRepo() *MockShortURLsRepo {
-	return &MockShortURLsRepo{
-		Data: make(map[string]models.ShortURL),
-	}
-}
-
-func (repo *MockShortURLsRepo) CreateShortURL(BaseURL string) string {
-	shortURL := models.NewShortURL(BaseURL)
-	shortURL.Alias = "mock_alias"
-	repo.Data[shortURL.Alias] = shortURL
-
-	return shortURL.AliasURL()
-}
-
-func (repo *MockShortURLsRepo) FindShortURL(alias string) (string, bool) {
-	shortURL, ok := repo.Data[alias]
-
-	return shortURL.BaseURL, ok
-}
-
 func TestShortURLCreate(t *testing.T) {
-	mockStorage := NewShortURLsRepo()
+	mockStorage := mocks.NewShortURLsRepo()
+	config := appConfig.NewConfig()
 
 	type response struct {
 		code        int
@@ -66,7 +44,7 @@ func TestShortURLCreate(t *testing.T) {
 			},
 			want: response{
 				code:        http.StatusCreated,
-				body:        "http://localhost:8080/mock_alias",
+				body:        "http://localhost:8081/mock_alias",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -104,7 +82,7 @@ func TestShortURLCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.send.method, tt.send.path, tt.send.body)
 			w := httptest.NewRecorder()
-			ShortURLCreate(tt.storage)(w, request)
+			ShortURLCreate(config.PublicAddress, tt.storage)(w, request)
 
 			res := w.Result()
 
@@ -121,7 +99,8 @@ func TestShortURLCreate(t *testing.T) {
 }
 
 func TestShortURLShow(t *testing.T) {
-	mockStorage := NewShortURLsRepo()
+	mockStorage := mocks.NewShortURLsRepo()
+	config := appConfig.NewConfig()
 
 	type response struct {
 		code        int
@@ -201,7 +180,7 @@ func TestShortURLShow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStorage.CreateShortURL(tt.baseURL)
+			mockStorage.CreateShortURL(config.PublicAddress, tt.baseURL)
 
 			request := httptest.NewRequest(tt.send.method, tt.send.path, nil)
 			w := httptest.NewRecorder()

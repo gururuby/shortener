@@ -1,13 +1,13 @@
 package controllers
 
 import (
-	"github.com/gururuby/shortener/internal/app/storage"
+	"github.com/gururuby/shortener/internal/storage"
 	"io"
 	"net/http"
 	"strings"
 )
 
-func ShortURLCreate(storage storage.StorageInterface) http.HandlerFunc {
+func ShortURLCreate(publicAddress string, storage storage.StorageInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			input, _ := io.ReadAll(r.Body)
@@ -16,7 +16,7 @@ func ShortURLCreate(storage storage.StorageInterface) http.HandlerFunc {
 			if baseURL == "" {
 				http.Error(w, "Empty base URL, please specify URL", http.StatusUnprocessableEntity)
 			} else {
-				ShortURL := storage.CreateShortURL(baseURL)
+				ShortURL := storage.CreateShortURL(publicAddress, baseURL)
 
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusCreated)

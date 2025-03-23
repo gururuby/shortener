@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/gururuby/shortener/internal/app/utils"
+	"github.com/gururuby/shortener/internal/utils"
 )
 
 type ShortURL struct {
@@ -16,6 +16,6 @@ func NewShortURL(baseURL string) ShortURL {
 	}
 }
 
-func (s *ShortURL) AliasURL() string {
-	return "http://localhost:8080/" + s.Alias
+func (s *ShortURL) AliasURL(publicAddress string) string {
+	return publicAddress + s.Alias
 }

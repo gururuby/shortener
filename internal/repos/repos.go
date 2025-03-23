@@ -1,7 +1,7 @@
 package repos
 
 import (
-	"github.com/gururuby/shortener/internal/app/models"
+	"github.com/gururuby/shortener/internal/models"
 )
 
 type ShortURLsRepo struct {
@@ -14,11 +14,11 @@ func NewShortURLsRepo() *ShortURLsRepo {
 	}
 }
 
-func (repo *ShortURLsRepo) CreateShortURL(BaseURL string) string {
+func (repo *ShortURLsRepo) CreateShortURL(publicAddress string, BaseURL string) string {
 	shortURL := models.NewShortURL(BaseURL)
 	repo.Data[shortURL.Alias] = shortURL
 
-	return shortURL.AliasURL()
+	return shortURL.AliasURL(publicAddress)
 }
 
 func (repo *ShortURLsRepo) FindShortURL(alias string) (string, bool) {
