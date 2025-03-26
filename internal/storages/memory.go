@@ -7,7 +7,6 @@ import (
 
 const (
 	maxGenerationAttempts = 10
-	aliasLength           = 5
 	saveError             = "Cannot save data. Short URL with the same alias already exists"
 )
 
@@ -17,7 +16,7 @@ type MemoryStorage struct {
 
 func (storage *MemoryStorage) Save(baseURL string, sourceURL string) (result string, ok bool) {
 	for i := 1; i < maxGenerationAttempts; i++ {
-		alias := utils.GenerateRandomString(aliasLength)
+		alias := utils.GenerateRandomString(models.AliasLength)
 		_, exist := storage.Data[alias]
 		if !exist {
 			newShortURL := models.ShortURL{Source: sourceURL, Alias: alias}

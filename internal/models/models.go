@@ -4,6 +4,8 @@ import (
 	"github.com/gururuby/shortener/internal/utils"
 )
 
+const AliasLength = 5
+
 type ShortURL struct {
 	Source string
 	Alias  string
@@ -11,7 +13,7 @@ type ShortURL struct {
 
 func NewShortURL(source string) ShortURL {
 	return ShortURL{
-		Alias:  utils.GenerateRandomString(5),
+		Alias:  utils.GenerateRandomString(AliasLength),
 		Source: source,
 	}
 }
