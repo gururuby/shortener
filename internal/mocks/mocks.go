@@ -2,38 +2,26 @@ package mocks
 
 import "github.com/gururuby/shortener/internal/models"
 
-type MockShortURLsRepo struct {
+type MockStorage struct {
 	Data map[string]models.ShortURL
 }
 
-type MockConfig struct {
-	ServerAddress string
-	BaseURL       string
-}
-
-func NewMockConfig() MockConfig {
-	return MockConfig{
-		ServerAddress: "localhost:8080",
-		BaseURL:       "http://localhost:8080",
-	}
-}
-
-func NewMockShortURLsRepo() *MockShortURLsRepo {
-	return &MockShortURLsRepo{
+func NewMockStorage() *MockStorage {
+	return &MockStorage{
 		Data: make(map[string]models.ShortURL),
 	}
 }
 
-func (repo *MockShortURLsRepo) CreateShortURL(baseURL string, source string) string {
+func (storage *MockStorage) Save(baseURL string, source string) (string, bool) {
 	shortURL := models.NewShortURL(source)
 	shortURL.Alias = "mock_alias"
-	repo.Data[shortURL.Alias] = shortURL
+	storage.Data[shortURL.Alias] = shortURL
 
-	return shortURL.AliasURL(baseURL)
+	return shortURL.AliasURL(baseURL), true
 }
 
-func (repo *MockShortURLsRepo) FindShortURL(alias string) (string, bool) {
-	shortURL, ok := repo.Data[alias]
+func (storage *MockStorage) Find(alias string) (string, bool) {
+	shortURL, ok := storage.Data[alias]
 
 	return shortURL.Source, ok
 }

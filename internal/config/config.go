@@ -11,20 +11,20 @@ type Config struct {
 	BaseURL       string `env:"BASE_URL"`
 }
 
-func NewConfig() *Config {
-	var config Config
+var config Config
 
-	// Override config from ENVs
+func NewConfig() *Config {
 	err := env.Parse(&config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Override config via flags
-	flag.StringVar(&config.ServerAddress, "a", "localhost:8080", "Server address")
-	flag.StringVar(&config.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")
-
 	flag.Parse()
 
 	return &config
+}
+
+func init() {
+	flag.StringVar(&config.ServerAddress, "a", "localhost:8080", "Server address")
+	flag.StringVar(&config.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")
 }

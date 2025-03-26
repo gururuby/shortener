@@ -1,9 +1,10 @@
-package controllers
+package handlers
 
 import (
+	appConfig "github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/mocks"
-	"github.com/gururuby/shortener/internal/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,9 +12,13 @@ import (
 	"testing"
 )
 
-func TestShortURLCreate(t *testing.T) {
-	mockStorage := mocks.NewMockShortURLsRepo()
-	config := mocks.NewMockConfig()
+func TestCreate(t *testing.T) {
+	storage := mocks.NewMockStorage()
+	config := appConfig.NewConfig()
+	handler := URLsHandler{
+		storage: storage,
+		config:  config,
+	}
 
 	type response struct {
 		code        int
@@ -28,14 +33,12 @@ func TestShortURLCreate(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		storage storage.IStorage
-		send    request
-		want    response
+		name string
+		send request
+		want response
 	}{
 		{
-			name:    "when successfully created short url",
-			storage: mockStorage,
+			name: "when successfully created short url",
 			send: request{
 				method: http.MethodPost,
 				body:   strings.NewReader("http://example.com"),
@@ -48,8 +51,7 @@ func TestShortURLCreate(t *testing.T) {
 			},
 		},
 		{
-			name:    "when was not passed base URL",
-			storage: mockStorage,
+			name: "when was not passed base URL",
 			send: request{
 				method: http.MethodPost,
 				body:   strings.NewReader(""),
@@ -57,21 +59,20 @@ func TestShortURLCreate(t *testing.T) {
 			},
 			want: response{
 				code:        http.StatusUnprocessableEntity,
-				body:        "Empty base URL, please specify URL\n",
+				body:        "Empty source URL, please specify URL\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
-			name:    "when request not allowed HTTP method",
-			storage: mockStorage,
+			name: "when request not allowed HTTP method",
 			send: request{
 				method: http.MethodGet,
 				body:   strings.NewReader("http://example.com"),
 				path:   "/",
 			},
 			want: response{
-				code:        http.StatusBadRequest,
-				body:        "Bad request\n",
+				code:        http.StatusMethodNotAllowed,
+				body:        "Method GET is not allowed\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -81,14 +82,16 @@ func TestShortURLCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.send.method, tt.send.path, tt.send.body)
 			w := httptest.NewRecorder()
-			ShortURLCreate(config.BaseURL, tt.storage)(w, request)
+			handler.Create()(w, request)
 
 			res := w.Result()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 
 			defer res.Body.Close()
-			resBody, _ := io.ReadAll(res.Body)
+			resBody, err := io.ReadAll(res.Body)
+
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.body, string(resBody))
 			assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
@@ -97,9 +100,13 @@ func TestShortURLCreate(t *testing.T) {
 	}
 }
 
-func TestShortURLShow(t *testing.T) {
-	mockStorage := mocks.NewMockShortURLsRepo()
-	config := mocks.NewMockConfig()
+func TestShow(t *testing.T) {
+	storage := mocks.NewMockStorage()
+	config := appConfig.NewConfig()
+	handler := URLsHandler{
+		storage: storage,
+		config:  config,
+	}
 
 	type response struct {
 		code        int
@@ -115,14 +122,12 @@ func TestShortURLShow(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		storage storage.IStorage
 		baseURL string
 		send    request
 		want    response
 	}{
 		{
 			name:    "when successfully find base url by alias",
-			storage: mockStorage,
 			baseURL: "https://example.com",
 			send: request{
 				method: http.MethodGet,
@@ -135,7 +140,6 @@ func TestShortURLShow(t *testing.T) {
 		},
 		{
 			name:    "when alias was not passed",
-			storage: mockStorage,
 			baseURL: "https://example.com",
 			send: request{
 				method: http.MethodGet,
@@ -149,29 +153,27 @@ func TestShortURLShow(t *testing.T) {
 		},
 		{
 			name:    "when base URL was not found",
-			storage: mockStorage,
 			baseURL: "https://example.com",
 			send: request{
 				method: http.MethodGet,
 				path:   "/unknown",
 			},
 			want: response{
-				code:        http.StatusNotFound,
-				body:        "URL was not found\n",
+				code:        http.StatusUnprocessableEntity,
+				body:        "Source URL not found\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
 		{
 			name:    "when request not allowed HTTP method",
 			baseURL: "https://example.com",
-			storage: mockStorage,
 			send: request{
 				method: http.MethodPost,
 				path:   "/mock_alias",
 			},
 			want: response{
-				code:        http.StatusBadRequest,
-				body:        "Bad request\n",
+				code:        http.StatusMethodNotAllowed,
+				body:        "Method POST is not allowed\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -179,21 +181,22 @@ func TestShortURLShow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockStorage.CreateShortURL(config.BaseURL, tt.baseURL)
+			storage.Save(config.BaseURL, tt.baseURL)
 
 			request := httptest.NewRequest(tt.send.method, tt.send.path, nil)
 			w := httptest.NewRecorder()
-			ShortURLShow(tt.storage)(w, request)
+			handler.Show()(w, request)
 
 			res := w.Result()
 
 			assert.Equal(t, tt.want.code, res.StatusCode)
 
 			defer res.Body.Close()
-			resBody, _ := io.ReadAll(res.Body)
+			resBody, err := io.ReadAll(res.Body)
+
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.want.body, string(resBody))
-
 			assert.Equal(t, tt.want.location, res.Header.Get("Location"))
 		})
 	}

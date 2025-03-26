@@ -13,27 +13,13 @@ import (
 	"testing"
 )
 
-func testRequest(t *testing.T, ts *httptest.Server, method string, path string, body io.Reader) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, body)
-	require.NoError(t, err)
-
-	resp, err := ts.Client().Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-
-	return resp, string(respBody)
-}
-
-func TestRouter(t *testing.T) {
-	storage := mocks.NewMockShortURLsRepo()
+func TestValidRequests(t *testing.T) {
+	storage := mocks.NewMockStorage()
 	config := appConfig.NewConfig()
 	ts := httptest.NewServer(router.NewRouter(config, storage))
 	defer ts.Close()
 
-	var testTable = []struct {
+	var specs = []struct {
 		path   string
 		method string
 		body   io.Reader
@@ -47,6 +33,29 @@ func TestRouter(t *testing.T) {
 			want:   "http://localhost:8080/mock_alias",
 			status: http.StatusCreated,
 		},
+	}
+	for _, spec := range specs {
+		response, result := testRequest(t, ts, spec.method, spec.path, spec.body)
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, spec.status, response.StatusCode)
+		assert.Equal(t, spec.want, result)
+	}
+}
+
+func TestInvalidRequests(t *testing.T) {
+	storage := mocks.NewMockStorage()
+	config := appConfig.NewConfig()
+	ts := httptest.NewServer(router.NewRouter(config, storage))
+	defer ts.Close()
+
+	var specs = []struct {
+		path   string
+		method string
+		body   io.Reader
+		want   string
+		status int
+	}{
 		{
 			path:   "/",
 			method: "GET",
@@ -55,16 +64,31 @@ func TestRouter(t *testing.T) {
 		{
 			path:   "/unknown",
 			method: "GET",
-			want:   "URL was not found\n",
-			status: http.StatusNotFound,
+			want:   "Source URL not found\n",
+			status: http.StatusUnprocessableEntity,
 		},
 	}
-	for _, v := range testTable {
-		resp, get := testRequest(t, ts, v.method, v.path, v.body)
-		resp.Body.Close()
-		assert.Equal(t, v.status, resp.StatusCode)
-		if v.want != "" {
-			assert.Equal(t, v.want, get)
+	for _, spec := range specs {
+		response, result := testRequest(t, ts, spec.method, spec.path, spec.body)
+		err := response.Body.Close()
+		require.NoError(t, err)
+		assert.Equal(t, spec.status, response.StatusCode)
+		if spec.want != "" {
+			assert.Equal(t, spec.want, result)
 		}
 	}
+}
+
+func testRequest(t *testing.T, ts *httptest.Server, method string, path string, body io.Reader) (*http.Response, string) {
+	request, err := http.NewRequest(method, ts.URL+path, body)
+	require.NoError(t, err)
+
+	response, err := ts.Client().Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	respBody, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+
+	return response, string(respBody)
 }

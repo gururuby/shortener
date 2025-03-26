@@ -4,19 +4,31 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gururuby/shortener/internal/config"
-	"github.com/gururuby/shortener/internal/controllers"
-	"github.com/gururuby/shortener/internal/storage"
+	"github.com/gururuby/shortener/internal/handlers"
+	"net/http"
 )
 
-func NewRouter(config *config.Config, storage storage.IStorage) chi.Router {
+type Storage interface {
+	Save(string, string) (string, bool)
+	Find(string) (string, bool)
+}
+
+type Handler interface {
+	Create() http.HandlerFunc
+	Show() http.HandlerFunc
+}
+
+func NewRouter(config *config.Config, storage Storage) chi.Router {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
-	router.Post("/", controllers.ShortURLCreate(config.BaseURL, storage))
-	router.Get("/{alias}", controllers.ShortURLShow(storage))
+	urlsHandler := handlers.NewURLsHandler(config, storage)
+
+	router.Post("/", urlsHandler.Create())
+	router.Get("/{alias}", urlsHandler.Show())
 
 	return router
 }
