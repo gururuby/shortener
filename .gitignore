@@ -15,6 +15,11 @@
 cmd/shortener/main
 cmd/shortener/shortener
 
+# Tools
+shortenertestbeta
+statictest
+Makefile
+
 # Dependency directories (remove the comment below to include it)
 vendor/
 

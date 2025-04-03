@@ -1,0 +1,222 @@
+package handler
+
+import (
+	"errors"
+	"github.com/gururuby/shortener/internal/domain/usecase/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestCreateShortURL_Ok(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
+
+	handler := NewShortURLHandler(uc)
+
+	request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("http://example.com"))
+	w := httptest.NewRecorder()
+	handler.CreateShortURL()(w, request)
+
+	res := w.Result()
+
+	assert.Equal(t, http.StatusCreated, res.StatusCode)
+
+	defer res.Body.Close()
+	resBody, err := io.ReadAll(res.Body)
+
+	require.NoError(t, err)
+
+	assert.Equal(t, "http://localhost:8080/mock_alias", string(resBody))
+	assert.Equal(t, "text/plain; charset=utf-8", res.Header.Get("Content-Type"))
+}
+
+func TestCreateShortURL_Errors(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc := mock.NewMockshortURLUseCase(ctrl)
+
+	type request struct {
+		method string
+		path   string
+		body   io.Reader
+	}
+
+	type response struct {
+		code        int
+		body        string
+		contentType string
+	}
+
+	type useCaseResult struct {
+		res string
+		err error
+	}
+
+	tests := []struct {
+		name       string
+		request    request
+		response   response
+		useCaseRes useCaseResult
+	}{
+		{
+			name: "when use case returns some error",
+			useCaseRes: useCaseResult{
+				res: "",
+				err: errors.New("some error"),
+			},
+			request: request{
+				method: http.MethodPost,
+				body:   strings.NewReader("http://example.com"),
+				path:   "/",
+			},
+			response: response{
+				code:        http.StatusUnprocessableEntity,
+				body:        "some error\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "when request method is not allowed",
+			request: request{
+				method: http.MethodGet,
+				path:   "/",
+			},
+			response: response{
+				code:        http.StatusMethodNotAllowed,
+				body:        "HTTP method GET is not allowed\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			uc.EXPECT().CreateShortURL(gomock.Any()).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+			handler := NewShortURLHandler(uc)
+
+			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
+			w := httptest.NewRecorder()
+			handler.CreateShortURL()(w, req)
+
+			res := w.Result()
+
+			assert.Equal(t, tt.response.code, res.StatusCode)
+
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.response.body, string(resBody))
+			assert.Equal(t, tt.response.contentType, res.Header.Get("Content-Type"))
+
+		})
+	}
+}
+
+func TestFindShortURL_Ok(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc.EXPECT().FindShortURL("/some_alias").Return("https://ya.ru", nil)
+
+	handler := NewShortURLHandler(uc)
+
+	request := httptest.NewRequest(http.MethodGet, "/some_alias", nil)
+	w := httptest.NewRecorder()
+	handler.FindShortURL()(w, request)
+
+	res := w.Result()
+
+	assert.Equal(t, http.StatusTemporaryRedirect, res.StatusCode)
+
+	defer res.Body.Close()
+	_, err := io.ReadAll(res.Body)
+
+	require.NoError(t, err)
+	assert.Equal(t, "https://ya.ru", res.Header.Get("Location"))
+}
+
+func TestFindShortURL_Errors(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	uc := mock.NewMockshortURLUseCase(ctrl)
+
+	type request struct {
+		method string
+		path   string
+	}
+
+	type response struct {
+		code        int
+		body        string
+		contentType string
+	}
+
+	type useCaseResult struct {
+		res string
+		err error
+	}
+
+	tests := []struct {
+		name       string
+		request    request
+		response   response
+		useCaseRes useCaseResult
+	}{
+		{
+			name: "when use case returns some error",
+			useCaseRes: useCaseResult{
+				res: "",
+				err: errors.New("some error"),
+			},
+			request: request{
+				method: http.MethodGet,
+				path:   "/alias1",
+			},
+			response: response{
+				code:        http.StatusUnprocessableEntity,
+				body:        "some error\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "when request method is not allowed",
+			request: request{
+				method: http.MethodPost,
+				path:   "/alias2",
+			},
+			response: response{
+				code:        http.StatusMethodNotAllowed,
+				body:        "HTTP method POST is not allowed\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			uc.EXPECT().FindShortURL(tt.request.path).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+			handler := NewShortURLHandler(uc)
+
+			req := httptest.NewRequest(tt.request.method, tt.request.path, nil)
+			w := httptest.NewRecorder()
+
+			handler.FindShortURL()(w, req)
+
+			res := w.Result()
+
+			assert.Equal(t, tt.response.code, res.StatusCode)
+
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.response.body, string(resBody))
+		})
+	}
+}
