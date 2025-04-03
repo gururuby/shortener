@@ -1,11 +1,25 @@
-package utils
+package entity
 
 import (
 	"math/rand"
 	"time"
 )
 
-func GenerateRandomString(length int) string {
+const aliasLength = 5
+
+type ShortURL struct {
+	SourceURL string
+	Alias     string
+}
+
+func NewShortURL(sourceURL string) ShortURL {
+	return ShortURL{
+		Alias:     generateAlias(aliasLength),
+		SourceURL: sourceURL,
+	}
+}
+
+func generateAlias(length int) string {
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	chars := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +

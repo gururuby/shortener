@@ -1,55 +1,51 @@
 package app
 
 import (
-	appConfig "github.com/gururuby/shortener/internal/config"
-	"github.com/gururuby/shortener/internal/mocks"
-	"github.com/gururuby/shortener/internal/router"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 )
 
-func TestValidRequests(t *testing.T) {
-	storage := mocks.NewMockStorage()
-	config := appConfig.NewConfig()
-	ts := httptest.NewServer(router.NewRouter(config, storage))
+func TestAppOkRequests(t *testing.T) {
+	app := NewApp()
+	ts := httptest.NewServer(app.router)
 	defer ts.Close()
 
-	var specs = []struct {
-		path   string
-		method string
-		body   io.Reader
-		want   string
-		status int
+	var tests = []struct {
+		path      string
+		method    string
+		body      io.Reader
+		wantMatch string
+		status    int
 	}{
 		{
-			path:   "/",
-			method: "POST",
-			body:   strings.NewReader("https://ya.ru"),
-			want:   "http://localhost:8080/mock_alias",
-			status: http.StatusCreated,
+			path:      "/",
+			method:    "POST",
+			body:      strings.NewReader("https://ya.ru"),
+			wantMatch: "^http://localhost:8080/\\w{5}$",
+			status:    http.StatusCreated,
 		},
 	}
-	for _, spec := range specs {
-		response, result := testRequest(t, ts, spec.method, spec.path, spec.body)
+	for _, tt := range tests {
+		response, result := testRequest(t, ts, tt.method, tt.path, tt.body)
 		err := response.Body.Close()
 		require.NoError(t, err)
-		assert.Equal(t, spec.status, response.StatusCode)
-		assert.Equal(t, spec.want, result)
+		assert.Equal(t, tt.status, response.StatusCode)
+		assert.Regexp(t, regexp.MustCompile(tt.wantMatch), result)
 	}
 }
 
-func TestInvalidRequests(t *testing.T) {
-	storage := mocks.NewMockStorage()
-	config := appConfig.NewConfig()
-	ts := httptest.NewServer(router.NewRouter(config, storage))
+func TestAppErrorRequests(t *testing.T) {
+	app := NewApp()
+	ts := httptest.NewServer(app.router)
 	defer ts.Close()
 
-	var specs = []struct {
+	var tests = []struct {
 		path   string
 		method string
 		body   io.Reader
@@ -64,17 +60,17 @@ func TestInvalidRequests(t *testing.T) {
 		{
 			path:   "/unknown",
 			method: "GET",
-			want:   "Source URL not found\n",
+			want:   "source URL not found\n",
 			status: http.StatusUnprocessableEntity,
 		},
 	}
-	for _, spec := range specs {
-		response, result := testRequest(t, ts, spec.method, spec.path, spec.body)
+	for _, tt := range tests {
+		response, result := testRequest(t, ts, tt.method, tt.path, tt.body)
 		err := response.Body.Close()
 		require.NoError(t, err)
-		assert.Equal(t, spec.status, response.StatusCode)
-		if spec.want != "" {
-			assert.Equal(t, spec.want, result)
+		assert.Equal(t, tt.status, response.StatusCode)
+		if tt.want != "" {
+			assert.Equal(t, tt.want, result)
 		}
 	}
 }
