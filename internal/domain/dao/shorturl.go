@@ -43,7 +43,7 @@ func (dao *ShortURLDAO) saveWithAttempt(attCount int, sourceURL string) (string,
 
 	if errors.Is(err, errNonUnique) {
 		attCount++
-		dao.saveWithAttempt(attCount, sourceURL)
+		return dao.saveWithAttempt(attCount, sourceURL)
 	}
 
 	return res, err

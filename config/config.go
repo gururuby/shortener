@@ -14,9 +14,10 @@ type (
 	}
 
 	App struct {
+		Env     string `env:"APP_ENV" envDefault:"development"`
 		Name    string `env:"APP_NAME" envDefault:"Shortener"`
 		Version string `env:"APP_VERSION" envDefault:"0.0.1"`
-		BaseURL string `env:"BASE_URL"`
+		BaseURL string `env:"APP_BASE_URL"`
 	}
 
 	Server struct {
