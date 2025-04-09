@@ -26,3 +26,7 @@
 #### Increment 5
 [![autotests](https://github.com/gururuby/shortener/actions/workflows/shortenertest.yml/badge.svg?branch=iter5)](https://github.com/gururuby/shortener/actions/workflows/shortenertest.yml)
 [![go vet test](https://github.com/gururuby/shortener/actions/workflows/statictest.yml/badge.svg?branch=iter5)](https://github.com/gururuby/shortener/actions/workflows/statictest.yml)
+
+#### Increment 6
+[![autotests](https://github.com/gururuby/shortener/actions/workflows/shortenertest.yml/badge.svg?branch=iter6)](https://github.com/gururuby/shortener/actions/workflows/shortenertest.yml)
+[![go vet test](https://github.com/gururuby/shortener/actions/workflows/statictest.yml/badge.svg?branch=iter6)](https://github.com/gururuby/shortener/actions/workflows/statictest.yml)
