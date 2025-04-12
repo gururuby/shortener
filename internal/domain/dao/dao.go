@@ -1,3 +1,5 @@
+//go:generate mockgen -destination=./mock_dao/mock.go . DB
+
 package dao
 
 import "errors"

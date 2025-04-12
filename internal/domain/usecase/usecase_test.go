@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"errors"
-	"github.com/gururuby/shortener/internal/domain/dao/mock"
+	"github.com/gururuby/shortener/internal/domain/usecase/mock_usecase"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -10,7 +10,7 @@ import (
 
 func TestFindShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		sourceURL string
@@ -48,7 +48,7 @@ func TestFindShortURL_Ok(t *testing.T) {
 
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		sourceURL string
@@ -91,7 +91,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 
 func TestCreateShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		alias string
@@ -125,7 +125,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		alias string

@@ -2,7 +2,7 @@ package dao
 
 import (
 	"errors"
-	"github.com/gururuby/shortener/internal/infra/db/memory/mock"
+	"github.com/gururuby/shortener/internal/domain/dao/mock_dao"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -10,7 +10,7 @@ import (
 
 func TestDAO_FindByAlias_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockDB(ctrl)
+	db := mock_dao.NewMockDB(ctrl)
 	dao := New(db)
 
 	type dbRes struct {
@@ -43,7 +43,7 @@ func TestDAO_FindByAlias_Ok(t *testing.T) {
 
 func TestDAO_FindByAlias_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockDB(ctrl)
+	db := mock_dao.NewMockDB(ctrl)
 	dao := New(db)
 
 	type dbRes struct {
@@ -76,7 +76,7 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 
 func TestDAO_Save_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockDB(ctrl)
+	db := mock_dao.NewMockDB(ctrl)
 	dao := New(db)
 
 	type dbRes struct {
@@ -109,7 +109,7 @@ func TestDAO_Save_Ok(t *testing.T) {
 
 func TestDAO_Save_RetryError(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockDB(ctrl)
+	db := mock_dao.NewMockDB(ctrl)
 	dao := New(db)
 
 	type dbRes struct {

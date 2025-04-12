@@ -3,7 +3,7 @@ package handler
 import (
 	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/gururuby/shortener/internal/domain/usecase/mock"
+	"github.com/gururuby/shortener/internal/handler/http/mock_handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -16,7 +16,7 @@ import (
 
 func TestCreateShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
 
 	r := chi.NewRouter()
@@ -41,7 +41,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -126,7 +126,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 
 func TestFindShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().FindShortURL("/some_alias").Return("https://ya.ru", nil)
 
 	r := chi.NewRouter()
@@ -149,7 +149,7 @@ func TestFindShortURL_Ok(t *testing.T) {
 
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 
 	type request struct {
 		method string

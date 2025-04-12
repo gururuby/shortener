@@ -1,3 +1,5 @@
+//go:generate mockgen -destination=./mock_handler/mock.go . UseCase
+
 package handler
 
 import (

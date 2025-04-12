@@ -1,3 +1,5 @@
+//go:generate mockgen -destination=./mock_usecase/mock.go . DAO
+
 package usecase
 
 import (
