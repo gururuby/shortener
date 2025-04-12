@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"github.com/go-chi/chi/v5"
 	"github.com/gururuby/shortener/internal/domain/usecase/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,14 +16,15 @@ import (
 
 func TestCreateShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock.NewMockUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
 
-	handler := NewShortURLHandler(uc)
+	r := chi.NewRouter()
+	h := handler{router: r, uc: uc}
 
 	request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("http://example.com"))
 	w := httptest.NewRecorder()
-	handler.CreateShortURL()(w, request)
+	h.CreateShortURL()(w, request)
 
 	res := w.Result()
 
@@ -39,7 +41,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock.NewMockUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -98,11 +100,13 @@ func TestCreateShortURL_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			uc.EXPECT().CreateShortURL(gomock.Any()).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
-			handler := NewShortURLHandler(uc)
+
+			r := chi.NewRouter()
+			h := handler{router: r, uc: uc}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
 			w := httptest.NewRecorder()
-			handler.CreateShortURL()(w, req)
+			h.CreateShortURL()(w, req)
 
 			res := w.Result()
 
@@ -122,14 +126,15 @@ func TestCreateShortURL_Errors(t *testing.T) {
 
 func TestFindShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock.NewMockUseCase(ctrl)
 	uc.EXPECT().FindShortURL("/some_alias").Return("https://ya.ru", nil)
 
-	handler := NewShortURLHandler(uc)
+	r := chi.NewRouter()
+	h := handler{router: r, uc: uc}
 
 	request := httptest.NewRequest(http.MethodGet, "/some_alias", nil)
 	w := httptest.NewRecorder()
-	handler.FindShortURL()(w, request)
+	h.FindShortURL()(w, request)
 
 	res := w.Result()
 
@@ -144,7 +149,7 @@ func TestFindShortURL_Ok(t *testing.T) {
 
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock.NewMockUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -201,12 +206,14 @@ func TestFindShortURL_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			uc.EXPECT().FindShortURL(tt.request.path).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
-			handler := NewShortURLHandler(uc)
+
+			r := chi.NewRouter()
+			h := handler{router: r, uc: uc}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, nil)
 			w := httptest.NewRecorder()
 
-			handler.FindShortURL()(w, req)
+			h.FindShortURL()(w, req)
 
 			res := w.Result()
 

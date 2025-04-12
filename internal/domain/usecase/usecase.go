@@ -12,24 +12,24 @@ const (
 	SourceURLNotFoundError = "source URL not found"
 )
 
-type shortURLDAO interface {
+type DAO interface {
 	FindByAlias(alias string) (string, error)
 	Save(sourceURL string) (string, error)
 }
 
-type ShortURLUseCase struct {
+type UseCase struct {
 	baseURL string
-	dao     shortURLDAO
+	DAO     DAO
 }
 
-func NewShortURLUseCase(dao shortURLDAO, baseURL string) *ShortURLUseCase {
-	return &ShortURLUseCase{
-		dao:     dao,
+func NewUseCase(dao DAO, baseURL string) *UseCase {
+	return &UseCase{
+		DAO:     dao,
 		baseURL: baseURL,
 	}
 }
 
-func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
+func (u *UseCase) CreateShortURL(sourceURL string) (string, error) {
 	if u.baseURL == "" {
 		return "", errors.New(EmptyBaseURLError)
 	}
@@ -38,7 +38,7 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 		return "", errors.New(EmptySourceURLError)
 	}
 
-	result, err := u.dao.Save(sourceURL)
+	result, err := u.DAO.Save(sourceURL)
 
 	if err != nil {
 		return "", err
@@ -47,14 +47,14 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 	return u.baseURL + "/" + result, nil
 }
 
-func (u *ShortURLUseCase) FindShortURL(alias string) (string, error) {
+func (u *UseCase) FindShortURL(alias string) (string, error) {
 	alias = strings.TrimPrefix(alias, "/")
 
 	if alias == "" {
 		return "", errors.New(EmptyAliasError)
 	}
 
-	res, err := u.dao.FindByAlias(alias)
+	res, err := u.DAO.FindByAlias(alias)
 	if err != nil {
 		return "", err
 	}

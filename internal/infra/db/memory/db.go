@@ -1,4 +1,4 @@
-package memory
+package db
 
 import (
 	"errors"
@@ -9,17 +9,17 @@ const (
 	sourceURLNotFoundError = "source URL not found"
 )
 
-type ShortURLDB struct {
+type DB struct {
 	Data map[string]entity.ShortURL
 }
 
-func NewShortURLDB() *ShortURLDB {
-	return &ShortURLDB{
+func New() *DB {
+	return &DB{
 		Data: make(map[string]entity.ShortURL),
 	}
 }
 
-func (db *ShortURLDB) Find(alias string) (string, error) {
+func (db *DB) Find(alias string) (string, error) {
 	res, ok := db.Data[alias]
 	if !ok {
 		return "", errors.New(sourceURLNotFoundError)
@@ -29,7 +29,7 @@ func (db *ShortURLDB) Find(alias string) (string, error) {
 
 }
 
-func (db *ShortURLDB) Save(sourceURL string) (string, error) {
+func (db *DB) Save(sourceURL string) (string, error) {
 	shortURL := entity.NewShortURL(sourceURL)
 	db.Data[shortURL.Alias] = shortURL
 

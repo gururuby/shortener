@@ -41,6 +41,10 @@ func New() (*Config, error) {
 	return &cfg, nil
 }
 
+func (c *Config) AppInfo() string {
+	return fmt.Sprintf("%s v%s (%s)", c.App.Name, c.App.Version, c.App.Env)
+}
+
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")

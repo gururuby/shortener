@@ -11,30 +11,30 @@ var (
 	errSave      = errors.New("cannot save error")
 )
 
-type shortURLDB interface {
+type DB interface {
 	Find(string) (string, error)
 	Save(string) (string, error)
 }
 
-type ShortURLDAO struct {
-	db shortURLDB
+type DAO struct {
+	db DB
 }
 
-func NewShortURLDAO(db shortURLDB) *ShortURLDAO {
-	return &ShortURLDAO{
+func New(db DB) *DAO {
+	return &DAO{
 		db: db,
 	}
 }
 
-func (dao *ShortURLDAO) FindByAlias(alias string) (string, error) {
+func (dao *DAO) FindByAlias(alias string) (string, error) {
 	return dao.db.Find(alias)
 }
 
-func (dao *ShortURLDAO) Save(sourceURL string) (string, error) {
+func (dao *DAO) Save(sourceURL string) (string, error) {
 	return dao.saveWithAttempt(1, sourceURL)
 }
 
-func (dao *ShortURLDAO) saveWithAttempt(attCount int, sourceURL string) (string, error) {
+func (dao *DAO) saveWithAttempt(attCount int, sourceURL string) (string, error) {
 	if attCount > maxGenerationAttempts {
 		return "", errSave
 	}

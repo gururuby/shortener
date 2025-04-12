@@ -10,7 +10,7 @@ import (
 
 func TestFindShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		sourceURL string
@@ -37,7 +37,7 @@ func TestFindShortURL_Ok(t *testing.T) {
 	}
 	for _, tt := range tests {
 		dao.EXPECT().FindByAlias("alias1").Return(tt.daoRes.sourceURL, nil).AnyTimes()
-		uc := ShortURLUseCase{dao: dao}
+		uc := UseCase{DAO: dao}
 
 		t.Run(tt.name, func(t *testing.T) {
 			res, _ := uc.FindShortURL(tt.alias)
@@ -48,7 +48,7 @@ func TestFindShortURL_Ok(t *testing.T) {
 
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		sourceURL string
@@ -82,7 +82,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dao.EXPECT().FindByAlias(tt.alias).Return(tt.daoRes.sourceURL, tt.daoRes.err).AnyTimes()
-			uc := ShortURLUseCase{dao: dao}
+			uc := UseCase{DAO: dao}
 			_, err := uc.FindShortURL(tt.alias)
 			require.Equal(t, tt.err, err)
 		})
@@ -91,7 +91,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 
 func TestCreateShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		alias string
@@ -114,7 +114,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	}
 	for _, tt := range tests {
 		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.alias, nil).AnyTimes()
-		uc := ShortURLUseCase{dao: dao, baseURL: tt.baseURL}
+		uc := UseCase{DAO: dao, baseURL: tt.baseURL}
 
 		t.Run(tt.name, func(t *testing.T) {
 			res, _ := uc.CreateShortURL(tt.sourceURL)
@@ -125,7 +125,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock.NewMockDAO(ctrl)
 
 	type daoRes struct {
 		alias string
@@ -159,7 +159,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.alias, tt.daoRes.err).AnyTimes()
-		uc := ShortURLUseCase{dao: dao, baseURL: tt.baseURL}
+		uc := UseCase{DAO: dao, baseURL: tt.baseURL}
 
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := uc.CreateShortURL(tt.sourceURL)

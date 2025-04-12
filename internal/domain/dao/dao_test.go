@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-func TestShortURLDAO_FindByAlias_Ok(t *testing.T) {
+func TestDAO_FindByAlias_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockshortURLDB(ctrl)
-	dao := NewShortURLDAO(db)
+	db := mock.NewMockDB(ctrl)
+	dao := New(db)
 
 	type dbRes struct {
 		res string
@@ -41,10 +41,10 @@ func TestShortURLDAO_FindByAlias_Ok(t *testing.T) {
 	}
 }
 
-func TestShortURLDAO_FindByAlias_Errors(t *testing.T) {
+func TestDAO_FindByAlias_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockshortURLDB(ctrl)
-	dao := NewShortURLDAO(db)
+	db := mock.NewMockDB(ctrl)
+	dao := New(db)
 
 	type dbRes struct {
 		res string
@@ -74,10 +74,10 @@ func TestShortURLDAO_FindByAlias_Errors(t *testing.T) {
 	}
 }
 
-func TestShortURLDAO_Save_Ok(t *testing.T) {
+func TestDAO_Save_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockshortURLDB(ctrl)
-	dao := NewShortURLDAO(db)
+	db := mock.NewMockDB(ctrl)
+	dao := New(db)
 
 	type dbRes struct {
 		res string
@@ -107,10 +107,10 @@ func TestShortURLDAO_Save_Ok(t *testing.T) {
 	}
 }
 
-func TestShortURLDAO_Save_RetryError(t *testing.T) {
+func TestDAO_Save_RetryError(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := mock.NewMockshortURLDB(ctrl)
-	dao := NewShortURLDAO(db)
+	db := mock.NewMockDB(ctrl)
+	dao := New(db)
 
 	type dbRes struct {
 		res string

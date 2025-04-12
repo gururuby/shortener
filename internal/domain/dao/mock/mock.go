@@ -1,0 +1,61 @@
+package mock
+
+import (
+	reflect "reflect"
+
+	gomock "go.uber.org/mock/gomock"
+)
+
+// MockDAO is a mock of DAO interface.
+type MockDAO struct {
+	ctrl     *gomock.Controller
+	recorder *MockDAOMockRecorder
+	isgomock struct{}
+}
+
+// MockDAOMockRecorder is the mock recorder for MockDAO.
+type MockDAOMockRecorder struct {
+	mock *MockDAO
+}
+
+// NewMockDAO creates a new mock instance.
+func NewMockDAO(ctrl *gomock.Controller) *MockDAO {
+	mock := &MockDAO{ctrl: ctrl}
+	mock.recorder = &MockDAOMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDAO) EXPECT() *MockDAOMockRecorder {
+	return m.recorder
+}
+
+// FindByAlias mocks base method.
+func (m *MockDAO) FindByAlias(alias string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindByAlias", alias)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindByAlias indicates an expected call of FindByAlias.
+func (mr *MockDAOMockRecorder) FindByAlias(alias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByAlias", reflect.TypeOf((*MockDAO)(nil).FindByAlias), alias)
+}
+
+// Save mocks base method.
+func (m *MockDAO) Save(sourceURL string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Save", sourceURL)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Save indicates an expected call of Save.
+func (mr *MockDAOMockRecorder) Save(sourceURL any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockDAO)(nil).Save), sourceURL)
+}
