@@ -8,6 +8,7 @@ import (
 	"github.com/gururuby/shortener/internal/domain/usecase"
 	httpHandler "github.com/gururuby/shortener/internal/handler/http"
 	apiHandler "github.com/gururuby/shortener/internal/handler/http/api"
+	"github.com/gururuby/shortener/internal/infra/compress"
 	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
 	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
 	"github.com/gururuby/shortener/internal/infra/logger"
@@ -51,6 +52,7 @@ func Setup() *App {
 
 	router := chi.NewRouter()
 	router.Use(logger.HandlerMiddleware)
+	router.Use(compress.HandlerMiddleware)
 
 	uc := usecase.NewUseCase(storage, cfg.App.BaseURL)
 

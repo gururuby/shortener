@@ -4,7 +4,6 @@ package handler
 
 import (
 	"fmt"
-	"github.com/gururuby/shortener/internal/infra/logger"
 	"io"
 	"net/http"
 )
@@ -69,14 +68,12 @@ func (h *handler) FindShortURL() http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), http.StatusMethodNotAllowed)
 			return
 		}
-		logger.Log.Info(r.URL.Path)
 		result, err := h.uc.FindShortURL(r.URL.Path)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
 		}
-
 		w.Header().Set("Location", result)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	}

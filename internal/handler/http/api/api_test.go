@@ -36,6 +36,6 @@ func TestCreateShortURL_Ok(t *testing.T) {
 
 	require.NoError(t, err)
 
-	assert.Equal(t, "{\"Result\":\"http://localhost:8080/mock_alias\"}", string(resBody))
+	require.JSONEq(t, `{"Result":"http://localhost:8080/mock_alias"}`, string(resBody))
 	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
 }
