@@ -2,7 +2,10 @@ package dao
 
 import (
 	"errors"
+	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/domain/dao/mock_dao"
+	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/mock_entity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -11,32 +14,33 @@ import (
 func TestDAO_FindByAlias_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := mock_dao.NewMockDB(ctrl)
-	dao := New(db)
+	gen := mock_entity.NewMockGenerator(ctrl)
 
-	type dbRes struct {
-		res string
-		err error
+	cfg, _ := config.New()
+	dao := New(gen, cfg, db)
+
+	type dbRecord struct {
+		value *entity.ShortURL
+		err   error
 	}
 
 	tests := []struct {
-		name  string
-		alias string
-		dbRes dbRes
-		res   string
+		name     string
+		alias    string
+		dbRecord dbRecord
 	}{
 		{
-			name:  "when find short URL in db by alias",
-			alias: "alias",
-			dbRes: dbRes{res: "https://ya.ru"},
-			res:   "https://ya.ru",
+			name:     "when find short URL in db by alias",
+			alias:    "alias",
+			dbRecord: dbRecord{value: &entity.ShortURL{SourceURL: "https://ya.ru"}},
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Find(tt.alias).Return(tt.dbRes.res, tt.dbRes.err).Times(1)
+		db.EXPECT().Find(tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
 			res, _ := dao.FindByAlias(tt.alias)
-			require.Equal(t, tt.res, res)
+			require.Equal(t, tt.dbRecord.value, res)
 		})
 	}
 }
@@ -44,32 +48,32 @@ func TestDAO_FindByAlias_Ok(t *testing.T) {
 func TestDAO_FindByAlias_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := mock_dao.NewMockDB(ctrl)
-	dao := New(db)
+	cfg, _ := config.New()
+	gen := mock_entity.NewMockGenerator(ctrl)
+	dao := New(gen, cfg, db)
 
-	type dbRes struct {
-		res string
-		err error
+	type dbRecord struct {
+		value *entity.ShortURL
+		err   error
 	}
 
 	tests := []struct {
-		name  string
-		alias string
-		dbRes dbRes
-		err   error
+		name     string
+		alias    string
+		dbRecord dbRecord
 	}{
 		{
-			name:  "when cannot find short URL in db by alias",
-			alias: "unknown_alias",
-			dbRes: dbRes{res: "", err: errors.New("not found URL")},
-			err:   errors.New("not found URL"),
+			name:     "when cannot find record in db by alias",
+			alias:    "unknown_alias",
+			dbRecord: dbRecord{err: errors.New("not found URL")},
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Find(tt.alias).Return(tt.dbRes.res, tt.dbRes.err).Times(1)
+		db.EXPECT().Find(tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := dao.FindByAlias(tt.alias)
-			require.Error(t, tt.err, err)
+			require.Error(t, tt.dbRecord.err, err)
 		})
 	}
 }
@@ -77,30 +81,32 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 func TestDAO_Save_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := mock_dao.NewMockDB(ctrl)
-	dao := New(db)
+	cfg, _ := config.New()
 
-	type dbRes struct {
-		res string
-		err error
-	}
+	gen := mock_entity.NewMockGenerator(ctrl)
+	gen.EXPECT().UUID().Return("UUID")
+	gen.EXPECT().Alias().Return("alias")
+
+	dao := New(gen, cfg, db)
 
 	tests := []struct {
 		name      string
 		sourceURL string
-		dbRes     dbRes
-		res       string
+		res       *entity.ShortURL
 	}{
 		{
 			name:      "when save short URL in db",
 			sourceURL: "https://ya.ru",
-			dbRes:     dbRes{res: "alias"},
-			res:       "alias",
+			res: &entity.ShortURL{
+				UUID:      "UUID",
+				SourceURL: "https://ya.ru",
+				Alias:     "alias",
+			},
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Save(tt.sourceURL).Return(tt.dbRes.res, tt.dbRes.err).Times(1)
-
 		t.Run(tt.name, func(t *testing.T) {
+			db.EXPECT().Save(tt.res).Return(tt.res, nil)
 			res, _ := dao.Save(tt.sourceURL)
 			require.Equal(t, tt.res, res)
 		})
@@ -110,32 +116,39 @@ func TestDAO_Save_Ok(t *testing.T) {
 func TestDAO_Save_RetryError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := mock_dao.NewMockDB(ctrl)
-	dao := New(db)
+	cfg, _ := config.New()
 
-	type dbRes struct {
-		res string
-		err error
+	gen := mock_entity.NewMockGenerator(ctrl)
+	gen.EXPECT().UUID().Return("UUID").AnyTimes()
+	gen.EXPECT().Alias().Return("alias").AnyTimes()
+
+	shortURL := entity.NewShortURL(gen, "https://ya.ru")
+
+	dao := New(gen, cfg, db)
+
+	type dbRecord struct {
+		value *entity.ShortURL
+		err   error
 	}
 
 	tests := []struct {
 		name      string
 		sourceURL string
-		dbRes     dbRes
+		dbRecord  dbRecord
 		err       error
 		retryCnt  int
 	}{
 		{
 			name:      "when try to save non unique value in db and retry to save",
 			sourceURL: "https://ya.ru",
-			dbRes:     dbRes{res: "", err: errNonUnique},
+			dbRecord:  dbRecord{value: nil, err: errNonUnique},
 			err:       errSave,
 			retryCnt:  5,
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Save(tt.sourceURL).Return(tt.dbRes.res, tt.dbRes.err).Times(tt.retryCnt)
-
 		t.Run(tt.name, func(t *testing.T) {
+			db.EXPECT().Save(shortURL).Return(tt.dbRecord.value, tt.dbRecord.err).Times(tt.retryCnt)
 			res, _ := dao.Save(tt.sourceURL)
 			require.Error(t, tt.err, res)
 		})

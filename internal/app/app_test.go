@@ -45,7 +45,8 @@ func TestAppOkRequests(t *testing.T) {
 	defer ts.Close()
 
 	sourceURL := "https://example.com"
-	existingAlias, _ := app.Storage.Save(sourceURL)
+	existingRecord, err := app.Storage.Save(sourceURL)
+	require.NoError(t, err)
 
 	var tests = []struct {
 		name     string
@@ -85,7 +86,7 @@ func TestAppOkRequests(t *testing.T) {
 			name: "when find ShortURL via http",
 			request: request{
 				method: http.MethodGet,
-				path:   "/" + existingAlias,
+				path:   "/" + existingRecord.Alias,
 			},
 			response: response{
 				location: sourceURL,
@@ -96,7 +97,7 @@ func TestAppOkRequests(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, body := testRequest(t, ts, tt.request)
-			err := res.Body.Close()
+			err = res.Body.Close()
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.response.status, res.StatusCode)
@@ -125,7 +126,7 @@ func TestAppCompressRequests(t *testing.T) {
 		{
 			name: "when send gzipped text/html",
 			request: compressedRequest{
-				body: zippify(t, `<a href="https://ya.ru">https://ya.ru</a>`),
+				body: zippify(t, "https://ya.ru"),
 				headers: headers{
 					contentType:     "text/html",
 					contentEncoding: "gzip",
@@ -210,7 +211,7 @@ func TestAppErrorRequests(t *testing.T) {
 				headers: headers{contentType: "text/plain; charset=utf-8"},
 				status:  http.StatusUnprocessableEntity,
 			},
-			want: "source URL not found\n",
+			want: "record not found\n",
 		},
 	}
 	for _, tt := range tests {

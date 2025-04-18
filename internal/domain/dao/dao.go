@@ -2,51 +2,63 @@
 
 package dao
 
-import "errors"
-
-const (
-	maxGenerationAttempts = 5
+import (
+	"errors"
+	"github.com/gururuby/shortener/config"
+	"github.com/gururuby/shortener/internal/domain/entity"
 )
 
 var (
-	errNonUnique = errors.New("record already exist")
+	errNonUnique = errors.New("record is not unique")
 	errSave      = errors.New("cannot save error")
 )
 
 type DB interface {
-	Find(string) (string, error)
-	Save(string) (string, error)
+	Find(string) (*entity.ShortURL, error)
+	Save(*entity.ShortURL) (*entity.ShortURL, error)
+}
+
+type Generator interface {
+	UUID() string
+	Alias() string
 }
 
 type DAO struct {
-	db DB
+	gen Generator
+	cfg *config.Config
+	db  DB
 }
 
-func New(db DB) *DAO {
-	return &DAO{
-		db: db,
+func New(gen Generator, cfg *config.Config, db DB) *DAO {
+	dao := &DAO{
+		gen: gen,
+		cfg: cfg,
+		db:  db,
 	}
+
+	return dao
 }
 
-func (dao *DAO) FindByAlias(alias string) (string, error) {
+func (dao *DAO) FindByAlias(alias string) (*entity.ShortURL, error) {
 	return dao.db.Find(alias)
 }
 
-func (dao *DAO) Save(sourceURL string) (string, error) {
+func (dao *DAO) Save(sourceURL string) (*entity.ShortURL, error) {
 	return dao.saveWithAttempt(1, sourceURL)
 }
 
-func (dao *DAO) saveWithAttempt(attCount int, sourceURL string) (string, error) {
-	if attCount > maxGenerationAttempts {
-		return "", errSave
+func (dao *DAO) saveWithAttempt(startAttemptCount int, sourceURL string) (*entity.ShortURL, error) {
+	if startAttemptCount > dao.cfg.App.MaxGenerationAttempts {
+		return nil, errSave
 	}
 
-	res, err := dao.db.Save(sourceURL)
+	shortURL := entity.NewShortURL(dao.gen, sourceURL)
+	record, err := dao.db.Save(shortURL)
 
 	if errors.Is(err, errNonUnique) {
-		attCount++
-		return dao.saveWithAttempt(attCount, sourceURL)
+		startAttemptCount++
+		return dao.saveWithAttempt(startAttemptCount, sourceURL)
 	}
 
-	return res, err
+	return record, err
 }

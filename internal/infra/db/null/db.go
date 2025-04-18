@@ -1,4 +1,6 @@
-package db
+package null
+
+import "github.com/gururuby/shortener/internal/domain/entity"
 
 type DB struct{}
 
@@ -6,10 +8,10 @@ func New() *DB {
 	return &DB{}
 }
 
-func (db *DB) Find(alias string) (string, error) {
-	return alias, nil
+func (db *DB) Find(_ string) (*entity.ShortURL, error) {
+	return nil, nil
 }
 
-func (db *DB) Save(sourceURL string) (string, error) {
-	return sourceURL, nil
+func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+	return shortURL, nil
 }

@@ -1,35 +1,21 @@
 package entity
 
-import (
-	"math/rand"
-	"time"
-)
-
-const aliasLength = 5
+//go:generate mockgen -destination=./mock_entity/mock.go . Generator
+type Generator interface {
+	UUID() string
+	Alias() string
+}
 
 type ShortURL struct {
+	UUID      string
 	SourceURL string
 	Alias     string
 }
 
-func NewShortURL(sourceURL string) ShortURL {
-	return ShortURL{
-		Alias:     generateAlias(aliasLength),
+func NewShortURL(g Generator, sourceURL string) *ShortURL {
+	return &ShortURL{
+		UUID:      g.UUID(),
+		Alias:     g.Alias(),
 		SourceURL: sourceURL,
 	}
-}
-
-func generateAlias(length int) string {
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	chars := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-		"abcdefghijklmnopqrstuvwxyz" +
-		"0123456789")
-
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = chars[rnd.Intn(len(chars))]
-	}
-
-	return string(b)
 }

@@ -12,6 +12,7 @@ package mock_dao
 import (
 	reflect "reflect"
 
+	entity "github.com/gururuby/shortener/internal/domain/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,10 +41,10 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 }
 
 // Find mocks base method.
-func (m *MockDB) Find(arg0 string) (string, error) {
+func (m *MockDB) Find(arg0 string) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Find", arg0)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -55,10 +56,10 @@ func (mr *MockDBMockRecorder) Find(arg0 any) *gomock.Call {
 }
 
 // Save mocks base method.
-func (m *MockDB) Save(arg0 string) (string, error) {
+func (m *MockDB) Save(arg0 *entity.ShortURL) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", arg0)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

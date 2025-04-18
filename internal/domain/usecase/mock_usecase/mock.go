@@ -12,6 +12,7 @@ package mock_usecase
 import (
 	reflect "reflect"
 
+	entity "github.com/gururuby/shortener/internal/domain/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,10 +41,10 @@ func (m *MockDAO) EXPECT() *MockDAOMockRecorder {
 }
 
 // FindByAlias mocks base method.
-func (m *MockDAO) FindByAlias(alias string) (string, error) {
+func (m *MockDAO) FindByAlias(alias string) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindByAlias", alias)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -55,10 +56,10 @@ func (mr *MockDAOMockRecorder) FindByAlias(alias any) *gomock.Call {
 }
 
 // Save mocks base method.
-func (m *MockDAO) Save(sourceURL string) (string, error) {
+func (m *MockDAO) Save(sourceURL string) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", sourceURL)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
