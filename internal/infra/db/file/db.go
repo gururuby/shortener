@@ -7,9 +7,11 @@ import (
 	"github.com/gururuby/shortener/internal/domain/entity"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"os"
+	"sync"
 )
 
 type DB struct {
+	mutex     sync.RWMutex
 	file      *os.File
 	shortURLs map[string]*entity.ShortURL
 }
@@ -72,7 +74,10 @@ func toShortURL(dto *fileDTO) *entity.ShortURL {
 }
 
 func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+	db.mutex.RLock()
 	shortURL, ok := db.shortURLs[alias]
+	db.mutex.RUnlock()
+
 	if !ok {
 		return nil, dbErrors.ErrNotFound
 	}
@@ -90,7 +95,9 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 		return nil, dbErrors.ErrIsNotUnique
 	}
 
+	db.mutex.Lock()
 	db.shortURLs[shortURL.Alias] = shortURL
+	db.mutex.Unlock()
 
 	data, err = json.Marshal(toFileDTO(shortURL))
 	if err != nil {
