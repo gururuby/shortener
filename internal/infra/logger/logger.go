@@ -2,80 +2,49 @@ package logger
 
 import (
 	"go.uber.org/zap"
-	"net/http"
-	"time"
+	"log"
+	"sync"
 )
 
-// По умолчанию установлен no-op-логер, который не выводит никаких сообщений.
-var Log *zap.Logger = zap.NewNop()
+var Log *zap.Logger
 
-// Initialize инициализирует синглтон логера с необходимым уровнем логирования.
-func Initialize(env string) error {
+func Initialize(appENV, logLevel string) {
+	var initLogger sync.Once
 
-	var cfg zap.Config
+	initLogger.Do(func() {
+		var cfg zap.Config
+		var err error
 
-	switch env {
-	case "development":
-		cfg = zap.NewDevelopmentConfig()
-	default:
-		cfg = zap.NewProductionConfig()
-	}
-
-	// создаём логер на основе конфигурации
-	zl, err := cfg.Build()
-	if err != nil {
-		return err
-	}
-	// устанавливаем синглтон
-	Log = zl
-	return nil
-}
-
-func HandlerMiddleware(h http.Handler) http.Handler {
-	logFn := func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		responseData := &responseData{}
-
-		lw := loggingResponseWriter{
-			ResponseWriter: w,
-			responseData:   responseData,
+		switch appENV {
+		case "production":
+			cfg = zap.NewProductionConfig()
+		default:
+			cfg = zap.NewDevelopmentConfig()
 		}
 
-		h.ServeHTTP(&lw, r)
+		cfg.Level = buildLogLevel(logLevel)
 
-		duration := time.Since(start)
-
-		Log.Info("shortener",
-			zap.String("method", r.Method),
-			zap.String("path", r.URL.Path),
-			zap.Int("status", responseData.status),
-			zap.Duration("duration", duration),
-			zap.Int("size", responseData.size),
-		)
-	}
-	return http.HandlerFunc(logFn)
+		if Log, err = cfg.Build(); err != nil {
+			log.Fatalf("cannot init logger: %s", err)
+		}
+	})
 }
 
-type (
-	responseData struct {
-		status int
-		size   int
+func buildLogLevel(logLevel string) zap.AtomicLevel {
+	var lvl zap.AtomicLevel
+
+	switch logLevel {
+	case "debug":
+		lvl = zap.NewAtomicLevelAt(zap.DebugLevel)
+	case "info":
+		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
+	case "warn":
+		lvl = zap.NewAtomicLevelAt(zap.WarnLevel)
+	case "error":
+		lvl = zap.NewAtomicLevelAt(zap.ErrorLevel)
+	default:
+		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
 
-	loggingResponseWriter struct {
-		http.ResponseWriter
-		responseData *responseData
-	}
-)
-
-func (r *loggingResponseWriter) Write(b []byte) (int, error) {
-	size, err := r.ResponseWriter.Write(b)
-	r.responseData.size += size
-	return size, err
-}
-
-func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.status = statusCode
+	return lvl
 }

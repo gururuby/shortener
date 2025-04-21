@@ -170,20 +170,24 @@ func TestAppCompressRequests(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			var body []byte
+			var zr *gzip.Reader
+
 			resp := testCompressedRequest(t, ts, tt.request)
+			defer resp.Body.Close()
 
 			assert.Equal(t, tt.response.status, resp.StatusCode)
 			assert.Equal(t, tt.response.headers.contentType, resp.Header.Get("Content-Type"))
 			assert.Equal(t, tt.response.headers.contentEncoding, resp.Header.Get("Content-Encoding"))
 			assert.Equal(t, tt.response.headers.acceptEncoding, resp.Header.Get("Accept-Encoding"))
 
-			zr, err := gzip.NewReader(resp.Body)
+			zr, err = gzip.NewReader(resp.Body)
 			require.NoError(t, err)
 
-			body, err := io.ReadAll(zr)
-			defer resp.Body.Close()
-			require.NoError(t, err)
+			body, err = io.ReadAll(zr)
 
+			require.NoError(t, err)
 			assert.Regexp(t, regexp.MustCompile(tt.want), string(body))
 		})
 	}
@@ -229,19 +233,28 @@ func TestAppErrorRequests(t *testing.T) {
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, r request) (*http.Response, string) {
-	req, err := http.NewRequest(r.method, ts.URL+r.path, bytes.NewReader(r.body))
+	var err error
+	var body []byte
+	var req *http.Request
+	var resp *http.Response
+
+	req, err = http.NewRequest(r.method, ts.URL+r.path, bytes.NewReader(r.body))
 	require.NoError(t, err)
 
 	req.Header.Set("Content-Type", r.headers.contentType)
 
-	res, err := ts.Client().Do(req)
-	require.NoError(t, err)
-	defer res.Body.Close()
-
-	respBody, err := io.ReadAll(res.Body)
+	resp, err = ts.Client().Do(req)
 	require.NoError(t, err)
 
-	return res, string(respBody)
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		require.NoError(t, err)
+	}(resp.Body)
+
+	body, err = io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	return resp, string(body)
 }
 
 func testCompressedRequest(t *testing.T, ts *httptest.Server, r compressedRequest) *http.Response {

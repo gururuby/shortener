@@ -14,6 +14,9 @@ import (
 )
 
 func TestCreateShortURL_Ok(t *testing.T) {
+	var err error
+	var body []byte
+
 	ctrl := gomock.NewController(t)
 	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
@@ -27,15 +30,15 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.CreateShortURL()(w, request)
 
-	res := w.Result()
+	resp := w.Result()
+	defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusCreated, res.StatusCode)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
-	defer res.Body.Close()
-	resBody, err := io.ReadAll(res.Body)
+	body, err = io.ReadAll(resp.Body)
 
 	require.NoError(t, err)
 
-	require.JSONEq(t, `{"Result":"http://localhost:8080/mock_alias"}`, string(resBody))
-	assert.Equal(t, "application/json", res.Header.Get("Content-Type"))
+	require.JSONEq(t, `{"Result":"http://localhost:8080/mock_alias"}`, string(body))
+	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 }

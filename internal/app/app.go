@@ -9,12 +9,12 @@ import (
 	"github.com/gururuby/shortener/internal/domain/usecase"
 	httpHandler "github.com/gururuby/shortener/internal/handler/http"
 	apiHandler "github.com/gururuby/shortener/internal/handler/http/api"
-	"github.com/gururuby/shortener/internal/infra/compress"
 	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
 	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
 	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/generator"
+	"github.com/gururuby/shortener/internal/middleware"
 	"log"
 	"net/http"
 )
@@ -50,9 +50,7 @@ func Setup() *App {
 		log.Fatalf("cannot setup config: %s", setupErr)
 	}
 
-	if setupErr = logger.Initialize(cfg.App.Env); setupErr != nil {
-		log.Fatalf("cannot setup logger: %s", setupErr)
-	}
+	logger.Initialize(cfg.App.Env, cfg.Log.Level)
 
 	gen := generator.New(cfg.App.AliasLength)
 
@@ -64,8 +62,8 @@ func Setup() *App {
 	storage = dao.New(gen, cfg, db)
 
 	router := chi.NewRouter()
-	router.Use(logger.HandlerMiddleware)
-	router.Use(compress.HandlerMiddleware)
+	router.Use(middleware.Logging)
+	router.Use(middleware.Compression)
 
 	uc := usecase.NewUseCase(storage, cfg.App.BaseURL)
 

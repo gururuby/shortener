@@ -1,13 +1,8 @@
 package memory
 
 import (
-	"errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
-)
-
-const (
-	recordNotFoundError    = "record not found"
-	recordIsNotUniqueError = "record is not unique"
+	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
 
 type DB struct {
@@ -23,7 +18,7 @@ func New() *DB {
 func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	shortURL, ok := db.shortURLs[alias]
 	if !ok {
-		return nil, errors.New(recordNotFoundError)
+		return nil, dbErrors.ErrNotFound
 	}
 
 	return shortURL, nil
@@ -32,7 +27,7 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	existing, _ := db.Find(shortURL.Alias)
 	if existing != nil {
-		return nil, errors.New(recordIsNotUniqueError)
+		return nil, dbErrors.ErrIsNotUnique
 	}
 
 	db.shortURLs[shortURL.Alias] = shortURL

@@ -31,6 +31,9 @@ func TestConfig(t *testing.T) {
 				FileStorage: FileStorage{
 					Path: "/tmp/db.json",
 				},
+				Log: Log{
+					Level: "info",
+				},
 			},
 		},
 	}

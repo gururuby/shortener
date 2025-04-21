@@ -6,6 +6,7 @@ import (
 	"github.com/gururuby/shortener/internal/domain/dao/mock_dao"
 	"github.com/gururuby/shortener/internal/domain/entity"
 	"github.com/gururuby/shortener/internal/domain/entity/mock_entity"
+	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -39,7 +40,8 @@ func TestDAO_FindByAlias_Ok(t *testing.T) {
 		db.EXPECT().Find(tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, _ := dao.FindByAlias(tt.alias)
+			res, err := dao.FindByAlias(tt.alias)
+			require.NoError(t, err)
 			require.Equal(t, tt.dbRecord.value, res)
 		})
 	}
@@ -107,7 +109,8 @@ func TestDAO_Save_Ok(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db.EXPECT().Save(tt.res).Return(tt.res, nil)
-			res, _ := dao.Save(tt.sourceURL)
+			res, err := dao.Save(tt.sourceURL)
+			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
@@ -141,16 +144,16 @@ func TestDAO_Save_RetryError(t *testing.T) {
 		{
 			name:      "when try to save non unique value in db and retry to save",
 			sourceURL: "https://ya.ru",
-			dbRecord:  dbRecord{value: nil, err: errNonUnique},
-			err:       errSave,
+			dbRecord:  dbRecord{value: nil, err: dbErrors.ErrIsNotUnique},
+			err:       dbErrors.ErrIsNotUnique,
 			retryCnt:  5,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db.EXPECT().Save(shortURL).Return(tt.dbRecord.value, tt.dbRecord.err).Times(tt.retryCnt)
-			res, _ := dao.Save(tt.sourceURL)
-			require.Error(t, tt.err, res)
+			_, err := dao.Save(tt.sourceURL)
+			require.Error(t, tt.err, err)
 		})
 	}
 }

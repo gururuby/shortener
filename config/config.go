@@ -12,6 +12,7 @@ type (
 		Server
 		DB
 		FileStorage
+		Log
 	}
 
 	App struct {
@@ -34,13 +35,17 @@ type (
 	FileStorage struct {
 		Path string `env:"FILE_STORAGE_PATH"`
 	}
+
+	Log struct {
+		Level string `env:"LOG_LEVEL" envDefault:"info"`
+	}
 )
 
 var cfg Config
 
 func New() (*Config, error) {
 	if err := env.Parse(&cfg); err != nil {
-		return nil, fmt.Errorf("config error: %w", err)
+		return nil, fmt.Errorf("config error: %v", err)
 	}
 
 	flag.Parse()

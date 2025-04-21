@@ -3,16 +3,9 @@
 package usecase
 
 import (
-	"errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"strings"
-)
-
-const (
-	EmptyBaseURLError      = "empty base URL, please specify base URL"
-	EmptySourceURLError    = "empty source URL, please specify source URL"
-	EmptyAliasError        = "empty alias, please specify alias"
-	SourceURLNotFoundError = "source URL not found"
 )
 
 type DAO interface {
@@ -34,11 +27,11 @@ func NewUseCase(dao DAO, baseURL string) *UseCase {
 
 func (u *UseCase) CreateShortURL(sourceURL string) (string, error) {
 	if u.baseURL == "" {
-		return "", errors.New(EmptyBaseURLError)
+		return "", ucErrors.ErrEmptyBaseURL
 	}
 
 	if sourceURL == "" {
-		return "", errors.New(EmptySourceURLError)
+		return "", ucErrors.ErrEmptySourceURL
 	}
 
 	result, err := u.dao.Save(sourceURL)
@@ -54,7 +47,7 @@ func (u *UseCase) FindShortURL(alias string) (string, error) {
 	alias = strings.TrimPrefix(alias, "/")
 
 	if alias == "" {
-		return "", errors.New(EmptyAliasError)
+		return "", ucErrors.ErrEmptyAlias
 	}
 
 	res, err := u.dao.FindByAlias(alias)
@@ -63,7 +56,7 @@ func (u *UseCase) FindShortURL(alias string) (string, error) {
 	}
 
 	if res == nil {
-		return "", errors.New(SourceURLNotFoundError)
+		return "", ucErrors.ErrSourceURLNotFound
 	}
 
 	return res.SourceURL, nil

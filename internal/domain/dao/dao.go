@@ -6,11 +6,7 @@ import (
 	"errors"
 	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/domain/entity"
-)
-
-var (
-	errNonUnique = errors.New("record is not unique")
-	errSave      = errors.New("cannot save error")
+	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
 
 type DB interface {
@@ -49,13 +45,13 @@ func (dao *DAO) Save(sourceURL string) (*entity.ShortURL, error) {
 
 func (dao *DAO) saveWithAttempt(startAttemptCount int, sourceURL string) (*entity.ShortURL, error) {
 	if startAttemptCount > dao.cfg.App.MaxGenerationAttempts {
-		return nil, errSave
+		return nil, dbErrors.ErrIsNotUnique
 	}
 
 	shortURL := entity.NewShortURL(dao.gen, sourceURL)
 	record, err := dao.db.Save(shortURL)
 
-	if errors.Is(err, errNonUnique) {
+	if errors.Is(err, dbErrors.ErrIsNotUnique) {
 		startAttemptCount++
 		return dao.saveWithAttempt(startAttemptCount, sourceURL)
 	}

@@ -15,6 +15,9 @@ import (
 )
 
 func TestCreateShortURL_Ok(t *testing.T) {
+	var err error
+	var body []byte
+
 	ctrl := gomock.NewController(t)
 	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
@@ -26,17 +29,16 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.CreateShortURL()(w, request)
 
-	res := w.Result()
+	resp := w.Result()
+	defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusCreated, res.StatusCode)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
-	defer res.Body.Close()
-	resBody, err := io.ReadAll(res.Body)
-
+	body, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	assert.Equal(t, "http://localhost:8080/mock_alias", string(resBody))
-	assert.Equal(t, "text/plain; charset=utf-8", res.Header.Get("Content-Type"))
+	assert.Equal(t, "http://localhost:8080/mock_alias", string(body))
+	assert.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 }
 
 func TestCreateShortURL_Errors(t *testing.T) {
@@ -99,6 +101,9 @@ func TestCreateShortURL_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			var body []byte
+
 			uc.EXPECT().CreateShortURL(gomock.Any()).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
 
 			r := chi.NewRouter()
@@ -108,23 +113,24 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			w := httptest.NewRecorder()
 			h.CreateShortURL()(w, req)
 
-			res := w.Result()
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			assert.Equal(t, tt.response.code, res.StatusCode)
+			assert.Equal(t, tt.response.code, resp.StatusCode)
 
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
+			body, err = io.ReadAll(resp.Body)
 
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.response.body, string(resBody))
-			assert.Equal(t, tt.response.contentType, res.Header.Get("Content-Type"))
-
+			assert.Equal(t, tt.response.body, string(body))
+			assert.Equal(t, tt.response.contentType, resp.Header.Get("Content-Type"))
 		})
 	}
 }
 
 func TestFindShortURL_Ok(t *testing.T) {
+	var err error
+
 	ctrl := gomock.NewController(t)
 	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().FindShortURL("/some_alias").Return("https://ya.ru", nil)
@@ -136,15 +142,15 @@ func TestFindShortURL_Ok(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.FindShortURL()(w, request)
 
-	res := w.Result()
+	resp := w.Result()
+	defer resp.Body.Close()
 
-	assert.Equal(t, http.StatusTemporaryRedirect, res.StatusCode)
+	assert.Equal(t, http.StatusTemporaryRedirect, resp.StatusCode)
 
-	defer res.Body.Close()
-	_, err := io.ReadAll(res.Body)
+	_, err = io.ReadAll(resp.Body)
 
 	require.NoError(t, err)
-	assert.Equal(t, "https://ya.ru", res.Header.Get("Location"))
+	assert.Equal(t, "https://ya.ru", resp.Header.Get("Location"))
 }
 
 func TestFindShortURL_Errors(t *testing.T) {
@@ -205,6 +211,9 @@ func TestFindShortURL_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			var body []byte
+
 			uc.EXPECT().FindShortURL(tt.request.path).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
 
 			r := chi.NewRouter()
@@ -215,15 +224,15 @@ func TestFindShortURL_Errors(t *testing.T) {
 
 			h.FindShortURL()(w, req)
 
-			res := w.Result()
+			resp := w.Result()
+			defer resp.Body.Close()
 
-			assert.Equal(t, tt.response.code, res.StatusCode)
+			assert.Equal(t, tt.response.code, resp.StatusCode)
 
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
+			body, err = io.ReadAll(resp.Body)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.response.body, string(resBody))
+			assert.Equal(t, tt.response.body, string(body))
 		})
 	}
 }

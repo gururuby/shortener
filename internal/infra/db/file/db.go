@@ -3,16 +3,10 @@ package file
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity"
+	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"os"
-)
-
-const (
-	recordNotFoundError    = "record not found"
-	recordIsNotUniqueError = "record is not unique"
-	cannotRestoreFromFile  = "cannot restore records from file %s"
 )
 
 type DB struct {
@@ -52,7 +46,7 @@ func restoreShortURLs(f *os.File, shortURLs map[string]*entity.ShortURL) error {
 		dto := &fileDTO{}
 		err := json.Unmarshal([]byte(scanner.Text()), dto)
 		if err != nil {
-			return fmt.Errorf(cannotRestoreFromFile, err.Error())
+			return fmt.Errorf(dbErrors.ErrRestoreFromFile.Error(), err.Error())
 		}
 		shortURL := toShortURL(dto)
 		shortURLs[shortURL.Alias] = shortURL
@@ -80,7 +74,7 @@ func toShortURL(dto *fileDTO) *entity.ShortURL {
 func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	shortURL, ok := db.shortURLs[alias]
 	if !ok {
-		return nil, errors.New(recordNotFoundError)
+		return nil, dbErrors.ErrNotFound
 	}
 
 	return shortURL, nil
@@ -93,7 +87,7 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var data []byte
 
 	if record, _ = db.Find(shortURL.Alias); record != nil {
-		return nil, errors.New(recordIsNotUniqueError)
+		return nil, dbErrors.ErrIsNotUnique
 	}
 
 	db.shortURLs[shortURL.Alias] = shortURL
