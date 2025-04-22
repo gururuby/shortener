@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"errors"
 	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/domain/dao/mock_dao"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -67,7 +66,7 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 		{
 			name:     "when cannot find record in db by alias",
 			alias:    "unknown_alias",
-			dbRecord: dbRecord{err: errors.New("not found URL")},
+			dbRecord: dbRecord{err: dbErrors.ErrNotFound},
 		},
 	}
 	for _, tt := range tests {

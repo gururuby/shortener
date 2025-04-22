@@ -75,15 +75,15 @@ func toShortURL(dto *fileDTO) *entity.ShortURL {
 
 func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
 	shortURL, ok := db.shortURLs[alias]
-	db.mutex.RUnlock()
 
 	if !ok {
 		return nil, dbErrors.ErrNotFound
 	}
 
 	return shortURL, nil
-
 }
 
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
@@ -96,8 +96,9 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	}
 
 	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	db.shortURLs[shortURL.Alias] = shortURL
-	db.mutex.Unlock()
 
 	data, err = json.Marshal(toFileDTO(shortURL))
 	if err != nil {

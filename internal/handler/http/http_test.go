@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"errors"
 	"github.com/go-chi/chi/v5"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"github.com/gururuby/shortener/internal/handler/http/mock_handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,7 +72,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: errors.New("some error"),
+				err: ucErrors.ErrEmptySourceURL,
 			},
 			request: request{
 				method: http.MethodPost,
@@ -81,7 +81,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			},
 			response: response{
 				code:        http.StatusUnprocessableEntity,
-				body:        "some error\n",
+				body:        "empty source URL, please specify source URL\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -183,7 +183,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: errors.New("some error"),
+				err: ucErrors.ErrEmptyAlias,
 			},
 			request: request{
 				method: http.MethodGet,
@@ -191,7 +191,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 			},
 			response: response{
 				code:        http.StatusUnprocessableEntity,
-				body:        "some error\n",
+				body:        "empty alias, please specify alias\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
