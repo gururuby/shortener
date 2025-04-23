@@ -175,7 +175,11 @@ func TestAppCompressRequests(t *testing.T) {
 			var zr *gzip.Reader
 
 			resp := testCompressedRequest(t, ts, tt.request)
-			defer resp.Body.Close()
+
+			defer func() {
+				err = resp.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			assert.Equal(t, tt.response.status, resp.StatusCode)
 			assert.Equal(t, tt.response.headers.contentType, resp.Header.Get("Content-Type"))

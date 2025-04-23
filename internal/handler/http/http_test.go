@@ -30,7 +30,11 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	h.CreateShortURL()(w, request)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+
+	defer func() {
+		err = resp.Body.Close()
+		require.NoError(t, err)
+	}()
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -114,7 +118,11 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			h.CreateShortURL()(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+
+			defer func() {
+				err = resp.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			assert.Equal(t, tt.response.code, resp.StatusCode)
 
@@ -143,7 +151,11 @@ func TestFindShortURL_Ok(t *testing.T) {
 	h.FindShortURL()(w, request)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+
+	defer func() {
+		err = resp.Body.Close()
+		require.NoError(t, err)
+	}()
 
 	assert.Equal(t, http.StatusTemporaryRedirect, resp.StatusCode)
 
@@ -225,7 +237,11 @@ func TestFindShortURL_Errors(t *testing.T) {
 			h.FindShortURL()(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+
+			defer func() {
+				err = resp.Body.Close()
+				require.NoError(t, err)
+			}()
 
 			assert.Equal(t, tt.response.code, resp.StatusCode)
 

@@ -31,7 +31,11 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	h.CreateShortURL()(w, request)
 
 	resp := w.Result()
-	defer resp.Body.Close()
+
+	defer func() {
+		err = resp.Body.Close()
+		require.NoError(t, err)
+	}()
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
