@@ -1,22 +1,27 @@
-package entity
+package generator
 
 import (
+	"github.com/google/uuid"
 	"math/rand"
 	"time"
 )
 
-const aliasLength = 5
-
-type ShortURL struct {
-	SourceURL string
-	Alias     string
+type Generator struct {
+	aliasLength int
 }
 
-func NewShortURL(sourceURL string) ShortURL {
-	return ShortURL{
-		Alias:     generateAlias(aliasLength),
-		SourceURL: sourceURL,
+func New(aliasLength int) *Generator {
+	return &Generator{
+		aliasLength: aliasLength,
 	}
+}
+
+func (g *Generator) Alias() string {
+	return generateAlias(g.aliasLength)
+}
+
+func (g *Generator) UUID() string {
+	return uuid.NewString()
 }
 
 func generateAlias(length int) string {

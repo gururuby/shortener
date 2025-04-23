@@ -1,80 +1,96 @@
 package app
 
 import (
+	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/domain/dao"
+	"github.com/gururuby/shortener/internal/domain/entity"
 	"github.com/gururuby/shortener/internal/domain/usecase"
-	http_handler "github.com/gururuby/shortener/internal/handler/http"
-	"github.com/gururuby/shortener/internal/infra/db/memory"
-	"github.com/gururuby/shortener/internal/infra/db/null"
+	httpHandler "github.com/gururuby/shortener/internal/handler/http"
+	apiHandler "github.com/gururuby/shortener/internal/handler/http/api"
+	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
+	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
+	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
+	"github.com/gururuby/shortener/internal/infra/logger"
+	"github.com/gururuby/shortener/internal/infra/utils/generator"
+	"github.com/gururuby/shortener/internal/middleware"
 	"log"
 	"net/http"
 )
 
-const (
-	shortURLCreatePath = "/"
-	shortURLFindPath   = "/{alias}"
-)
+type DAO interface {
+	FindByAlias(alias string) (*entity.ShortURL, error)
+	Save(sourceURL string) (*entity.ShortURL, error)
+}
 
-type shortURLDAO interface {
-	FindByAlias(alias string) (string, error)
-	Save(sourceURL string) (string, error)
+type DB interface {
+	Find(string) (*entity.ShortURL, error)
+	Save(*entity.ShortURL) (*entity.ShortURL, error)
+}
+
+type Router interface {
+	ServeHTTP(writer http.ResponseWriter, request *http.Request)
 }
 
 type App struct {
-	dao    shortURLDAO
-	router chi.Router
-	cfg    *config.Config
+	Storage DAO
+	Config  *config.Config
+	Router  Router
 }
 
-func NewApp() App {
-	app := App{}
-	app.setupConfig()
-	app.setupDAO()
-	app.setupRouter()
-	app.setupHandler()
-	return app
+func Setup() *App {
+	var setupErr error
+	var cfg *config.Config
+	var storage DAO
+	var db DB
+
+	cfg, setupErr = config.New()
+	if setupErr != nil {
+		log.Fatalf("cannot setup config: %s", setupErr)
+	}
+
+	logger.Initialize(cfg.App.Env, cfg.Log.Level)
+
+	gen := generator.New(cfg.App.AliasLength)
+
+	db, setupErr = setupDB(cfg)
+	if setupErr != nil {
+		log.Fatalf("cannot setup database: %s", setupErr)
+	}
+
+	storage = dao.New(gen, cfg, db)
+
+	router := chi.NewRouter()
+	router.Use(middleware.Logging)
+	router.Use(middleware.Compression)
+
+	uc := usecase.NewUseCase(storage, cfg.App.BaseURL)
+
+	httpHandler.Register(router, uc)
+	apiHandler.Register(router, uc)
+
+	return &App{Storage: storage, Config: cfg, Router: router}
+}
+
+func setupDB(cfg *config.Config) (DB, error) {
+	var db DB
+	var err error
+
+	switch cfg.DB.Type {
+	case "memory":
+		db = memoryDB.New()
+	case "file":
+		if db, err = fileDB.New(cfg.FileStorage.Path); err != nil {
+			log.Fatalf("cannot setup file DB: %s", err)
+		}
+	default:
+		db = nullDB.New()
+	}
+	return db, err
 }
 
 func (a *App) Run() {
-	log.Fatal(http.ListenAndServe(a.cfg.Server.Address, a.router))
-}
-
-func (a *App) setupConfig() {
-	cfg, err := config.New()
-
-	if err != nil {
-		log.Fatalf("Config error: %s", err)
-	}
-
-	a.cfg = cfg
-}
-
-func (a *App) setupDAO() {
-	switch a.cfg.DB.Type {
-	case "memory":
-		a.dao = dao.NewShortURLDAO(memory.NewShortURLDB())
-	default:
-		a.dao = dao.NewShortURLDAO(null.NewShortURLDB())
-	}
-}
-
-func (a *App) setupRouter() {
-	router := chi.NewRouter()
-
-	router.Use(middleware.RequestID)
-	router.Use(middleware.Logger)
-	router.Use(middleware.Recoverer)
-
-	a.router = router
-}
-
-func (a *App) setupHandler() {
-	uc := usecase.NewShortURLUseCase(a.dao, a.cfg.App.BaseURL)
-	handler := http_handler.NewShortURLHandler(uc)
-
-	a.router.Post(shortURLCreatePath, handler.CreateShortURL())
-	a.router.Get(shortURLFindPath, handler.FindShortURL())
+	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
+	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
 }

@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"errors"
-	"github.com/gururuby/shortener/internal/domain/usecase/mock"
+	"github.com/go-chi/chi/v5"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	"github.com/gururuby/shortener/internal/handler/http/mock_handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -14,32 +15,39 @@ import (
 )
 
 func TestCreateShortURL_Ok(t *testing.T) {
+	var err error
+	var body []byte
+
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
 
-	handler := NewShortURLHandler(uc)
+	r := chi.NewRouter()
+	h := handler{router: r, uc: uc}
 
 	request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("http://example.com"))
 	w := httptest.NewRecorder()
-	handler.CreateShortURL()(w, request)
+	h.CreateShortURL()(w, request)
 
-	res := w.Result()
+	resp := w.Result()
 
-	assert.Equal(t, http.StatusCreated, res.StatusCode)
+	defer func() {
+		err = resp.Body.Close()
+		require.NoError(t, err)
+	}()
 
-	defer res.Body.Close()
-	resBody, err := io.ReadAll(res.Body)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
+	body, err = io.ReadAll(resp.Body)
 	require.NoError(t, err)
 
-	assert.Equal(t, "http://localhost:8080/mock_alias", string(resBody))
-	assert.Equal(t, "text/plain; charset=utf-8", res.Header.Get("Content-Type"))
+	assert.Equal(t, "http://localhost:8080/mock_alias", string(body))
+	assert.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 }
 
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -68,7 +76,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: errors.New("some error"),
+				err: ucErrors.ErrEmptySourceURL,
 			},
 			request: request{
 				method: http.MethodPost,
@@ -77,7 +85,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			},
 			response: response{
 				code:        http.StatusUnprocessableEntity,
-				body:        "some error\n",
+				body:        "empty source URL, please specify source URL\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -97,54 +105,69 @@ func TestCreateShortURL_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			var body []byte
+
 			uc.EXPECT().CreateShortURL(gomock.Any()).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
-			handler := NewShortURLHandler(uc)
+
+			r := chi.NewRouter()
+			h := handler{router: r, uc: uc}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
 			w := httptest.NewRecorder()
-			handler.CreateShortURL()(w, req)
+			h.CreateShortURL()(w, req)
 
-			res := w.Result()
+			resp := w.Result()
 
-			assert.Equal(t, tt.response.code, res.StatusCode)
+			defer func() {
+				err = resp.Body.Close()
+				require.NoError(t, err)
+			}()
 
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
+			assert.Equal(t, tt.response.code, resp.StatusCode)
+
+			body, err = io.ReadAll(resp.Body)
 
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.response.body, string(resBody))
-			assert.Equal(t, tt.response.contentType, res.Header.Get("Content-Type"))
-
+			assert.Equal(t, tt.response.body, string(body))
+			assert.Equal(t, tt.response.contentType, resp.Header.Get("Content-Type"))
 		})
 	}
 }
 
 func TestFindShortURL_Ok(t *testing.T) {
+	var err error
+
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 	uc.EXPECT().FindShortURL("/some_alias").Return("https://ya.ru", nil)
 
-	handler := NewShortURLHandler(uc)
+	r := chi.NewRouter()
+	h := handler{router: r, uc: uc}
 
 	request := httptest.NewRequest(http.MethodGet, "/some_alias", nil)
 	w := httptest.NewRecorder()
-	handler.FindShortURL()(w, request)
+	h.FindShortURL()(w, request)
 
-	res := w.Result()
+	resp := w.Result()
 
-	assert.Equal(t, http.StatusTemporaryRedirect, res.StatusCode)
+	defer func() {
+		err = resp.Body.Close()
+		require.NoError(t, err)
+	}()
 
-	defer res.Body.Close()
-	_, err := io.ReadAll(res.Body)
+	assert.Equal(t, http.StatusTemporaryRedirect, resp.StatusCode)
+
+	_, err = io.ReadAll(resp.Body)
 
 	require.NoError(t, err)
-	assert.Equal(t, "https://ya.ru", res.Header.Get("Location"))
+	assert.Equal(t, "https://ya.ru", resp.Header.Get("Location"))
 }
 
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock.NewMockshortURLUseCase(ctrl)
+	uc := mock_handler.NewMockUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -172,7 +195,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: errors.New("some error"),
+				err: ucErrors.ErrEmptyAlias,
 			},
 			request: request{
 				method: http.MethodGet,
@@ -180,7 +203,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 			},
 			response: response{
 				code:        http.StatusUnprocessableEntity,
-				body:        "some error\n",
+				body:        "empty alias, please specify alias\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -200,23 +223,32 @@ func TestFindShortURL_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			var body []byte
+
 			uc.EXPECT().FindShortURL(tt.request.path).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
-			handler := NewShortURLHandler(uc)
+
+			r := chi.NewRouter()
+			h := handler{router: r, uc: uc}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, nil)
 			w := httptest.NewRecorder()
 
-			handler.FindShortURL()(w, req)
+			h.FindShortURL()(w, req)
 
-			res := w.Result()
+			resp := w.Result()
 
-			assert.Equal(t, tt.response.code, res.StatusCode)
+			defer func() {
+				err = resp.Body.Close()
+				require.NoError(t, err)
+			}()
 
-			defer res.Body.Close()
-			resBody, err := io.ReadAll(res.Body)
+			assert.Equal(t, tt.response.code, resp.StatusCode)
+
+			body, err = io.ReadAll(resp.Body)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.response.body, string(resBody))
+			assert.Equal(t, tt.response.body, string(body))
 		})
 	}
 }

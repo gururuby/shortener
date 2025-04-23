@@ -1,8 +1,10 @@
 package usecase
 
 import (
-	"errors"
-	"github.com/gururuby/shortener/internal/domain/dao/mock"
+	"github.com/gururuby/shortener/internal/domain/entity"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	"github.com/gururuby/shortener/internal/domain/usecase/mock_usecase"
+	DBErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -10,10 +12,10 @@ import (
 
 func TestFindShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
-		sourceURL string
+		shortURL *entity.ShortURL
 	}
 
 	tests := []struct {
@@ -25,22 +27,23 @@ func TestFindShortURL_Ok(t *testing.T) {
 		{
 			name:   "when find sourceURL in db",
 			alias:  "alias1",
-			daoRes: daoRes{sourceURL: "https://ya.ru"},
+			daoRes: daoRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
 			res:    "https://ya.ru",
 		},
 		{
 			name:   "when alias passed with '/' prefix",
 			alias:  "/alias1",
-			daoRes: daoRes{sourceURL: "https://ya.ru"},
+			daoRes: daoRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
 			res:    "https://ya.ru",
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().FindByAlias("alias1").Return(tt.daoRes.sourceURL, nil).AnyTimes()
-		uc := ShortURLUseCase{dao: dao}
+		dao.EXPECT().FindByAlias("alias1").Return(tt.daoRes.shortURL, nil).AnyTimes()
+		uc := UseCase{dao: dao}
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, _ := uc.FindShortURL(tt.alias)
+			res, err := uc.FindShortURL(tt.alias)
+			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
@@ -48,11 +51,11 @@ func TestFindShortURL_Ok(t *testing.T) {
 
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
-		sourceURL string
-		err       error
+		shortURL *entity.ShortURL
+		err      error
 	}
 
 	tests := []struct {
@@ -64,37 +67,37 @@ func TestFindShortURL_Errors(t *testing.T) {
 		{
 			name:  "when passed empty alias",
 			alias: "",
-			err:   errors.New(EmptyAliasError),
+			err:   ucErrors.ErrEmptyAlias,
 		},
 		{
 			name:   "when source URL in db not found",
 			alias:  "alias2",
-			daoRes: daoRes{sourceURL: ""},
-			err:    errors.New(SourceURLNotFoundError),
+			daoRes: daoRes{shortURL: nil},
+			err:    ucErrors.ErrSourceURLNotFound,
 		},
 		{
 			name:   "when something went wrong with db",
 			alias:  "alias3",
-			daoRes: daoRes{sourceURL: "", err: errors.New("something went wrong")},
-			err:    errors.New("something went wrong"),
+			daoRes: daoRes{shortURL: nil, err: DBErrors.ErrNotFound},
+			err:    DBErrors.ErrNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dao.EXPECT().FindByAlias(tt.alias).Return(tt.daoRes.sourceURL, tt.daoRes.err).AnyTimes()
-			uc := ShortURLUseCase{dao: dao}
+			dao.EXPECT().FindByAlias(tt.alias).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
+			uc := UseCase{dao: dao}
 			_, err := uc.FindShortURL(tt.alias)
-			require.Equal(t, tt.err, err)
+			require.Error(t, tt.err, err)
 		})
 	}
 }
 
 func TestCreateShortURL_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
-		alias string
+		shortURL *entity.ShortURL
 	}
 
 	tests := []struct {
@@ -108,16 +111,17 @@ func TestCreateShortURL_Ok(t *testing.T) {
 			name:      "when successfully stored short URL",
 			sourceURL: "https://ya.ru",
 			baseURL:   "http://localhost:8888",
-			daoRes:    daoRes{alias: "alias"},
+			daoRes:    daoRes{shortURL: &entity.ShortURL{Alias: "alias"}},
 			res:       "http://localhost:8888/alias",
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.alias, nil).AnyTimes()
-		uc := ShortURLUseCase{dao: dao, baseURL: tt.baseURL}
+		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, nil).AnyTimes()
+		uc := UseCase{dao: dao, baseURL: tt.baseURL}
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, _ := uc.CreateShortURL(tt.sourceURL)
+			res, err := uc.CreateShortURL(tt.sourceURL)
+			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
@@ -125,11 +129,11 @@ func TestCreateShortURL_Ok(t *testing.T) {
 
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mock.NewMockshortURLDAO(ctrl)
+	dao := mock_usecase.NewMockDAO(ctrl)
 
 	type daoRes struct {
-		alias string
-		err   error
+		shortURL *entity.ShortURL
+		err      error
 	}
 
 	tests := []struct {
@@ -142,28 +146,28 @@ func TestCreateShortURL_Errors(t *testing.T) {
 		{
 			name:    "when passed empty base URL",
 			baseURL: "",
-			err:     errors.New(EmptyBaseURLError),
+			err:     ucErrors.ErrEmptyBaseURL,
 		},
 		{
 			name:    "when passed empty source URL",
 			baseURL: "http://localhost:8888",
-			err:     errors.New(EmptySourceURLError),
+			err:     ucErrors.ErrEmptySourceURL,
 		},
 		{
 			name:      "when something went wrong with db",
 			baseURL:   "http://localhost:8888",
 			sourceURL: "https://ya.ru",
-			daoRes:    daoRes{alias: "", err: errors.New("something went wrong")},
-			err:       errors.New("something went wrong"),
+			daoRes:    daoRes{shortURL: nil, err: DBErrors.ErrNotFound},
+			err:       DBErrors.ErrNotFound,
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.alias, tt.daoRes.err).AnyTimes()
-		uc := ShortURLUseCase{dao: dao, baseURL: tt.baseURL}
+		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
+		uc := UseCase{dao: dao, baseURL: tt.baseURL}
 
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := uc.CreateShortURL(tt.sourceURL)
-			require.Equal(t, tt.err, err)
+			require.Error(t, tt.err, err)
 		})
 	}
 }
