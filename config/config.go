@@ -4,13 +4,14 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	"time"
 )
 
 type (
 	Config struct {
 		App
 		Server
-		DB
+		Database
 		FileStorage
 		Log
 	}
@@ -28,8 +29,11 @@ type (
 		Address string `env:"SERVER_ADDRESS"`
 	}
 
-	DB struct {
-		Type string `env:"DB_TYPE" envDefault:"file"`
+	Database struct {
+		ConnTryDelay time.Duration `env:"DATABASE_CONN_TRY_DELAY" envDefault:"5s"`
+		ConnTryTimes int           `env:"DATABASE_CONN_TRY_TIMES" envDefault:"5"`
+		Type         string        `env:"DATABASE_TYPE" envDefault:"postgresql"`
+		DSN          string        `env:"DATABASE_DSN"`
 	}
 
 	FileStorage struct {
@@ -60,5 +64,6 @@ func (c *Config) AppInfo() string {
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")
+	flag.StringVar(&cfg.Database.DSN, "d", "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable", "URL to database")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "ShortURLs storage file")
 }

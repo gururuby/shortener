@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestConfig(t *testing.T) {
@@ -25,8 +26,11 @@ func TestConfig(t *testing.T) {
 				Server: Server{
 					Address: "localhost:8080",
 				},
-				DB: DB{
-					Type: "file",
+				Database: Database{
+					Type:         "postgresql",
+					DSN:          "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable",
+					ConnTryDelay: 5 * time.Second,
+					ConnTryTimes: 5,
 				},
 				FileStorage: FileStorage{
 					Path: "/tmp/db.json",

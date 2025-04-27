@@ -14,13 +14,13 @@ type Router interface {
 	Post(path string, h http.HandlerFunc)
 }
 
-type UseCase interface {
+type ShortURLUseCase interface {
 	CreateShortURL(sourceURL string) (string, error)
 	FindShortURL(alias string) (string, error)
 }
 
 type handler struct {
-	uc     UseCase
+	uc     ShortURLUseCase
 	router Router
 }
 
@@ -33,7 +33,7 @@ type createShortURLDTO struct {
 	}
 }
 
-func Register(router Router, uc UseCase) {
+func Register(router Router, uc ShortURLUseCase) {
 	h := handler{router: router, uc: uc}
 	h.router.Post(shortensPath, h.CreateShortURL())
 }

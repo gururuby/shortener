@@ -3,7 +3,7 @@ package handler
 import (
 	"github.com/go-chi/chi/v5"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
-	"github.com/gururuby/shortener/internal/handler/http/mock_handler"
+	"github.com/gururuby/shortener/internal/handler/http/shorturl/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -14,12 +14,12 @@ import (
 	"testing"
 )
 
-func TestCreateShortURL_Ok(t *testing.T) {
+func TestCreateShortURLOK(t *testing.T) {
 	var err error
 	var body []byte
 
 	ctrl := gomock.NewController(t)
-	uc := mock_handler.NewMockUseCase(ctrl)
+	uc := mocks.NewMockShortURLUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
 
 	r := chi.NewRouter()
@@ -45,9 +45,9 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 }
 
-func TestCreateShortURL_Errors(t *testing.T) {
+func TestCreateShortURLErrors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock_handler.NewMockUseCase(ctrl)
+	uc := mocks.NewMockShortURLUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -76,7 +76,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: ucErrors.ErrEmptySourceURL,
+				err: ucErrors.ErrShortURLEmptySourceURL,
 			},
 			request: request{
 				method: http.MethodPost,
@@ -136,11 +136,11 @@ func TestCreateShortURL_Errors(t *testing.T) {
 	}
 }
 
-func TestFindShortURL_Ok(t *testing.T) {
+func TestFindShortURLOK(t *testing.T) {
 	var err error
 
 	ctrl := gomock.NewController(t)
-	uc := mock_handler.NewMockUseCase(ctrl)
+	uc := mocks.NewMockShortURLUseCase(ctrl)
 	uc.EXPECT().FindShortURL("/some_alias").Return("https://ya.ru", nil)
 
 	r := chi.NewRouter()
@@ -165,9 +165,9 @@ func TestFindShortURL_Ok(t *testing.T) {
 	assert.Equal(t, "https://ya.ru", resp.Header.Get("Location"))
 }
 
-func TestFindShortURL_Errors(t *testing.T) {
+func TestFindShortURLErrors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mock_handler.NewMockUseCase(ctrl)
+	uc := mocks.NewMockShortURLUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -195,7 +195,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: ucErrors.ErrEmptyAlias,
+				err: ucErrors.ErrShortURLEmptyAlias,
 			},
 			request: request{
 				method: http.MethodGet,

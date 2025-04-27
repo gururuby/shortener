@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/gururuby/shortener/internal/domain/entity/mock_entity"
+	"github.com/gururuby/shortener/internal/domain/entity/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"
@@ -11,7 +11,7 @@ func TestNewShortURLOk(t *testing.T) {
 	t.Run("create valid short URL entity", func(t *testing.T) {
 		sourceURL := "https://ya.ru"
 		ctrl := gomock.NewController(t)
-		generator := mock_entity.NewMockGenerator(ctrl)
+		generator := mocks.NewMockGenerator(ctrl)
 		generator.EXPECT().UUID().Return("UUID").Times(1)
 		generator.EXPECT().Alias().Return("alias").Times(1)
 

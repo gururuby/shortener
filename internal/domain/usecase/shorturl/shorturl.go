@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mock_usecase/mock.go . DAO
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DAO
 
 package usecase
 
@@ -13,25 +13,25 @@ type DAO interface {
 	Save(sourceURL string) (*entity.ShortURL, error)
 }
 
-type UseCase struct {
+type ShortURLUseCase struct {
 	baseURL string
 	dao     DAO
 }
 
-func NewUseCase(dao DAO, baseURL string) *UseCase {
-	return &UseCase{
+func NewShortURLUseCase(dao DAO, baseURL string) *ShortURLUseCase {
+	return &ShortURLUseCase{
 		dao:     dao,
 		baseURL: baseURL,
 	}
 }
 
-func (u *UseCase) CreateShortURL(sourceURL string) (string, error) {
+func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 	if u.baseURL == "" {
-		return "", ucErrors.ErrEmptyBaseURL
+		return "", ucErrors.ErrShortURLEmptyBaseURL
 	}
 
 	if sourceURL == "" {
-		return "", ucErrors.ErrEmptySourceURL
+		return "", ucErrors.ErrShortURLEmptySourceURL
 	}
 
 	result, err := u.dao.Save(sourceURL)
@@ -43,11 +43,11 @@ func (u *UseCase) CreateShortURL(sourceURL string) (string, error) {
 	return u.baseURL + "/" + result.Alias, nil
 }
 
-func (u *UseCase) FindShortURL(alias string) (string, error) {
+func (u ShortURLUseCase) FindShortURL(alias string) (string, error) {
 	alias = strings.TrimPrefix(alias, "/")
 
 	if alias == "" {
-		return "", ucErrors.ErrEmptyAlias
+		return "", ucErrors.ErrShortURLEmptyAlias
 	}
 
 	res, err := u.dao.FindByAlias(alias)
@@ -56,7 +56,7 @@ func (u *UseCase) FindShortURL(alias string) (string, error) {
 	}
 
 	if res == nil {
-		return "", ucErrors.ErrSourceURLNotFound
+		return "", ucErrors.ErrShortURLSourceURLNotFound
 	}
 
 	return res.SourceURL, nil

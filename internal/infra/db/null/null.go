@@ -15,3 +15,7 @@ func (db *DB) Find(_ string) (*entity.ShortURL, error) {
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
+
+func (db *DB) Ping() error {
+	return nil
+}

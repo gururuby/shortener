@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mock_handler/mock.go . UseCase
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . ShortURLUseCase
 
 package handler
 
@@ -18,17 +18,17 @@ type Router interface {
 	Get(path string, h http.HandlerFunc)
 }
 
-type UseCase interface {
+type ShortURLUseCase interface {
 	CreateShortURL(sourceURL string) (string, error)
 	FindShortURL(alias string) (string, error)
 }
 
 type handler struct {
-	uc     UseCase
+	uc     ShortURLUseCase
 	router Router
 }
 
-func Register(router Router, uc UseCase) {
+func Register(router Router, uc ShortURLUseCase) {
 	h := handler{router: router, uc: uc}
 	h.router.Get(shortenPath, h.FindShortURL())
 	h.router.Post(shortensPath, h.CreateShortURL())

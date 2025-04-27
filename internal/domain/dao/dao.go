@@ -1,17 +1,18 @@
-//go:generate mockgen -destination=./mock_dao/mock.go . DB
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DB
 
 package dao
 
 import (
 	"errors"
 	"github.com/gururuby/shortener/config"
+	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
-	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
 
 type DB interface {
 	Find(string) (*entity.ShortURL, error)
 	Save(*entity.ShortURL) (*entity.ShortURL, error)
+	Ping() error
 }
 
 type Generator interface {
@@ -43,15 +44,19 @@ func (dao *DAO) Save(sourceURL string) (*entity.ShortURL, error) {
 	return dao.saveWithAttempt(1, sourceURL)
 }
 
+func (dao *DAO) IsDBReady() error {
+	return dao.db.Ping()
+}
+
 func (dao *DAO) saveWithAttempt(startAttemptCount int, sourceURL string) (*entity.ShortURL, error) {
 	if startAttemptCount > dao.cfg.App.MaxGenerationAttempts {
-		return nil, dbErrors.ErrIsNotUnique
+		return nil, daoErrors.ErrDAORecordIsNotUnique
 	}
 
 	shortURL := entity.NewShortURL(dao.gen, sourceURL)
 	record, err := dao.db.Save(shortURL)
 
-	if errors.Is(err, dbErrors.ErrIsNotUnique) {
+	if errors.Is(err, daoErrors.ErrDAORecordIsNotUnique) {
 		startAttemptCount++
 		return dao.saveWithAttempt(startAttemptCount, sourceURL)
 	}

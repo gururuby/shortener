@@ -3,7 +3,7 @@ package handler
 import (
 	"bytes"
 	"github.com/go-chi/chi/v5"
-	"github.com/gururuby/shortener/internal/handler/http/mock_handler"
+	"github.com/gururuby/shortener/internal/handler/http/shorturl/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -18,7 +18,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 	var body []byte
 
 	ctrl := gomock.NewController(t)
-	uc := mock_handler.NewMockUseCase(ctrl)
+	uc := mocks.NewMockShortURLUseCase(ctrl)
 	uc.EXPECT().CreateShortURL("http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
 
 	r := chi.NewRouter()

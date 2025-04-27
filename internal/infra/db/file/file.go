@@ -48,7 +48,7 @@ func restoreShortURLs(f *os.File, shortURLs map[string]*entity.ShortURL) error {
 		dto := &fileDTO{}
 		err := json.Unmarshal([]byte(scanner.Text()), dto)
 		if err != nil {
-			return fmt.Errorf(dbErrors.ErrRestoreFromFile.Error(), err.Error())
+			return fmt.Errorf(dbErrors.ErrDBRestoreFromFile.Error(), err.Error())
 		}
 		shortURL := toShortURL(dto)
 		shortURLs[shortURL.Alias] = shortURL
@@ -80,7 +80,7 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	shortURL, ok := db.shortURLs[alias]
 
 	if !ok {
-		return nil, dbErrors.ErrNotFound
+		return nil, dbErrors.ErrDBRecordNotFound
 	}
 
 	return shortURL, nil
@@ -92,7 +92,7 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var data []byte
 
 	if record, _ = db.Find(shortURL.Alias); record != nil {
-		return nil, dbErrors.ErrIsNotUnique
+		return nil, dbErrors.ErrDBIsNotUnique
 	}
 
 	db.mutex.Lock()
@@ -110,4 +110,9 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	}
 
 	return shortURL, nil
+}
+
+func (db *DB) Ping() error {
+	_, err := db.file.Stat()
+	return err
 }
