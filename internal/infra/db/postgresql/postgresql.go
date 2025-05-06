@@ -3,22 +3,30 @@
 package postgresql
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
-	"fmt"
+	"embed"
+	"errors"
 	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/domain/entity"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
+	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/retry"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"os"
-	"sync"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
-type Client interface {
+//go:embed migrations/*.sql
+var migrations embed.FS
+
+const (
+	findQuery = "SELECT original_url, uuid FROM urls WHERE urls.alias = $1 LIMIT 1"
+	saveQuery = "INSERT INTO urls (alias, original_url) VALUES ($1, $2)"
+)
+
+type DBPool interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
@@ -26,80 +34,40 @@ type Client interface {
 }
 
 type DB struct {
-	mutex     sync.RWMutex
-	file      *os.File
-	client    Client
-	shortURLs map[string]*entity.ShortURL
-}
-
-type fileDTO struct {
-	UUID        string `json:"uuid"`
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	ctx  context.Context
+	pool DBPool
 }
 
 func New(ctx context.Context, cfg *config.Config) (*DB, error) {
 	var err error
-	var f *os.File
-	var client *pgxpool.Pool
+	var pool *pgxpool.Pool
 
-	var shortURLs = make(map[string]*entity.ShortURL)
+	goose.SetBaseFS(migrations)
+	if err = goose.SetDialect("postgres"); err != nil {
+		return nil, err
+	}
 
-	f, err = os.OpenFile(cfg.FileStorage.Path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	pool, err = newDBPool(ctx, cfg.Database)
 	if err != nil {
 		return nil, err
 	}
 
-	err = restoreShortURLs(f, shortURLs)
-	if err != nil {
+	dbFromPool := stdlib.OpenDBFromPool(pool)
+	if err = goose.Up(dbFromPool, "migrations"); err != nil {
 		return nil, err
 	}
 
-	client, err = newClient(ctx, cfg.Database)
-	if err != nil {
+	if err = dbFromPool.Close(); err != nil {
 		return nil, err
 	}
 
 	return &DB{
-		file:      f,
-		client:    client,
-		shortURLs: make(map[string]*entity.ShortURL),
+		ctx:  ctx,
+		pool: pool,
 	}, nil
 }
 
-func restoreShortURLs(f *os.File, shortURLs map[string]*entity.ShortURL) error {
-	scanner := bufio.NewScanner(f)
-
-	for scanner.Scan() {
-		dto := &fileDTO{}
-		err := json.Unmarshal([]byte(scanner.Text()), dto)
-		if err != nil {
-			return fmt.Errorf(dbErrors.ErrDBRestoreFromFile.Error(), err.Error())
-		}
-		shortURL := toShortURL(dto)
-		shortURLs[shortURL.Alias] = shortURL
-	}
-
-	return scanner.Err()
-}
-
-func toFileDTO(shortURL *entity.ShortURL) *fileDTO {
-	return &fileDTO{
-		UUID:        shortURL.UUID,
-		ShortURL:    shortURL.Alias,
-		OriginalURL: shortURL.SourceURL,
-	}
-}
-
-func toShortURL(dto *fileDTO) *entity.ShortURL {
-	return &entity.ShortURL{
-		UUID:      dto.UUID,
-		Alias:     dto.ShortURL,
-		SourceURL: dto.OriginalURL,
-	}
-}
-
-func newClient(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) {
+func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
 	var err error
 	var cancel context.CancelFunc
@@ -111,6 +79,7 @@ func newClient(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) 
 		pool, err = pgxpool.New(ctx, cfg.DSN)
 
 		if err != nil {
+			logger.Log.Error(err.Error())
 			return err
 		}
 
@@ -122,44 +91,38 @@ func newClient(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) 
 }
 
 func (db *DB) Find(alias string) (*entity.ShortURL, error) {
-	db.mutex.RLock()
-	defer db.mutex.RUnlock()
+	shortURL := entity.ShortURL{Alias: alias}
+	err := db.pool.QueryRow(db.ctx, findQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
 
-	shortURL, ok := db.shortURLs[alias]
-
-	if !ok {
+	if err != nil {
+		logger.Log.Error(err.Error())
 		return nil, dbErrors.ErrDBRecordNotFound
 	}
 
-	return shortURL, nil
+	return &shortURL, nil
 }
 
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var err error
-	var record *entity.ShortURL
-	var data []byte
+	var result pgconn.CommandTag
 
-	if record, _ = db.Find(shortURL.Alias); record != nil {
-		return nil, dbErrors.ErrDBIsNotUnique
-	}
-
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-
-	db.shortURLs[shortURL.Alias] = shortURL
-
-	data, err = json.Marshal(toFileDTO(shortURL))
+	result, err = db.pool.Exec(db.ctx, saveQuery, shortURL.Alias, shortURL.SourceURL)
 	if err != nil {
-		return nil, err
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			logger.Log.Error(pgErr.Error())
+			if pgErr.Code == "23505" {
+				return nil, dbErrors.ErrDBIsNotUnique
+			}
+			return nil, dbErrors.ErrDBQuery
+		}
 	}
 
-	if _, err = db.file.WriteString(string(data) + "\n"); err != nil {
-		return nil, err
-	}
+	logger.Log.Info(result.String())
 
 	return shortURL, nil
 }
 
 func (db *DB) Ping() error {
-	return db.client.Ping(context.Background())
+	return db.pool.Ping(context.Background())
 }

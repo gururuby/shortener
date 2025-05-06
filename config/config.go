@@ -54,6 +54,14 @@ func New() (*Config, error) {
 
 	flag.Parse()
 
+	if cfg.Database.DSN == "" {
+		if cfg.FileStorage.Path == "" {
+			cfg.Database.Type = "memory"
+		} else {
+			cfg.Database.Type = "file"
+		}
+	}
+
 	return &cfg, nil
 }
 
@@ -64,6 +72,6 @@ func (c *Config) AppInfo() string {
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")
-	flag.StringVar(&cfg.Database.DSN, "d", "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable", "URL to database")
+	flag.StringVar(&cfg.Database.DSN, "d", "", "URL to database")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "ShortURLs storage file")
 }

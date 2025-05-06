@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"github.com/gururuby/shortener/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -40,7 +41,12 @@ type (
 )
 
 func TestAppOkRequests(t *testing.T) {
-	app := Setup()
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	cfg.Database.Type = "memory"
+
+	app := New(cfg).Setup()
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
@@ -113,7 +119,12 @@ func TestAppOkRequests(t *testing.T) {
 }
 
 func TestAppCompressRequests(t *testing.T) {
-	app := Setup()
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	cfg.Database.Type = "memory"
+
+	app := New(cfg).Setup()
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
@@ -198,7 +209,12 @@ func TestAppCompressRequests(t *testing.T) {
 }
 
 func TestAppErrorRequests(t *testing.T) {
-	app := Setup()
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	cfg.Database.Type = "memory"
+
+	app := New(cfg).Setup()
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 

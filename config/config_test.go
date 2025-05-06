@@ -27,8 +27,8 @@ func TestConfig(t *testing.T) {
 					Address: "localhost:8080",
 				},
 				Database: Database{
-					Type:         "postgresql",
-					DSN:          "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable",
+					Type:         "file",
+					DSN:          "",
 					ConnTryDelay: 5 * time.Second,
 					ConnTryTimes: 5,
 				},

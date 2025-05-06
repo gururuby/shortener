@@ -45,42 +45,48 @@ type App struct {
 	Router  Router
 }
 
-func Setup() *App {
+func New(cfg *config.Config) *App {
+	return &App{Config: cfg}
+}
+
+func (a *App) Setup() *App {
 	var setupErr error
-	var cfg *config.Config
 	var storage DAO
 	var db DB
 
 	ctx := context.Background()
 
-	cfg, setupErr = config.New()
-	if setupErr != nil {
-		log.Fatalf("cannot setup config: %s", setupErr)
-	}
+	logger.Initialize(a.Config.App.Env, a.Config.Log.Level)
 
-	logger.Initialize(cfg.App.Env, cfg.Log.Level)
+	gen := generator.New(a.Config.App.AliasLength)
 
-	gen := generator.New(cfg.App.AliasLength)
-
-	db, setupErr = setupDB(ctx, cfg)
+	db, setupErr = setupDB(ctx, a.Config)
 	if setupErr != nil {
 		log.Fatalf("cannot setup database: %s", setupErr)
 	}
 
-	storage = dao.New(gen, cfg, db)
+	storage = dao.New(gen, a.Config, db)
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logging)
 	router.Use(middleware.Compression)
 
-	shortURLUseCase := ucShortURL.NewShortURLUseCase(storage, cfg.App.BaseURL)
+	shortURLUseCase := ucShortURL.NewShortURLUseCase(storage, a.Config.App.BaseURL)
 	appUseCase := ucApp.NewAppUseCase(storage)
 
 	handlerShortURL.Register(router, shortURLUseCase)
 	handlerApp.Register(router, appUseCase)
 	handlerAPI.Register(router, shortURLUseCase)
 
-	return &App{Storage: storage, Config: cfg, Router: router}
+	a.Storage = storage
+	a.Router = router
+
+	return a
+}
+
+func (a *App) Run() {
+	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
+	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
 }
 
 func setupDB(ctx context.Context, cfg *config.Config) (db DB, err error) {
@@ -99,9 +105,4 @@ func setupDB(ctx context.Context, cfg *config.Config) (db DB, err error) {
 		db = nullDB.New()
 	}
 	return
-}
-
-func (a *App) Run() {
-	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
-	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
 }
