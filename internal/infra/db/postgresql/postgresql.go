@@ -11,6 +11,7 @@ import (
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/retry"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,8 +23,10 @@ import (
 var migrations embed.FS
 
 const (
-	findQuery = "SELECT original_url, uuid FROM urls WHERE urls.alias = $1 LIMIT 1"
-	saveQuery = "INSERT INTO urls (alias, original_url) VALUES ($1, $2)"
+	findQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1 LIMIT 1`
+	findBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1 LIMIT 1`
+	saveQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
+	truncateQuery        = `TRUNCATE TABLE urls`
 )
 
 type DBPool interface {
@@ -103,26 +106,48 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 }
 
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
-	var err error
-	var result pgconn.CommandTag
+	var (
+		err   error
+		pgErr *pgconn.PgError
+	)
 
-	result, err = db.pool.Exec(db.ctx, saveQuery, shortURL.Alias, shortURL.SourceURL)
+	_, err = db.pool.Exec(db.ctx, saveQuery, shortURL.Alias, shortURL.SourceURL)
+
 	if err != nil {
-		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
-			logger.Log.Error(pgErr.Error())
-			if pgErr.Code == "23505" {
-				return nil, dbErrors.ErrDBIsNotUnique
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				shortURL, err = db.findBySourceURL(shortURL.SourceURL)
+				if err != nil {
+					return nil, err
+				}
+				return shortURL, dbErrors.ErrDBIsNotUnique
 			}
 			return nil, dbErrors.ErrDBQuery
 		}
 	}
 
-	logger.Log.Info(result.String())
-
 	return shortURL, nil
+}
+
+func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+	shortURL := entity.ShortURL{SourceURL: sourceURL}
+	err := db.pool.QueryRow(db.ctx, findBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
+
+	if err != nil {
+		logger.Log.Error(err.Error())
+		return nil, dbErrors.ErrDBRecordNotFound
+	}
+
+	return &shortURL, nil
 }
 
 func (db *DB) Ping() error {
 	return db.pool.Ping(context.Background())
+}
+
+func (db *DB) Truncate() {
+	_, err := db.pool.Exec(db.ctx, truncateQuery)
+	if err != nil {
+		logger.Log.Error(err.Error())
+	}
 }

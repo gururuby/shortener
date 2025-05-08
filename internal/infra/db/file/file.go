@@ -116,3 +116,10 @@ func (db *DB) Ping() error {
 	_, err := db.file.Stat()
 	return err
 }
+
+func (db *DB) Truncate() {
+	err := os.Truncate(db.file.Name(), 0)
+	if err != nil {
+		panic(err)
+	}
+}

@@ -25,16 +25,19 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 }
 
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
-	existing, _ := db.Find(shortURL.Alias)
-	if existing != nil {
-		return nil, dbErrors.ErrDBIsNotUnique
+	existRecord, _ := db.Find(shortURL.Alias)
+	if existRecord != nil {
+		return existRecord, dbErrors.ErrDBIsNotUnique
 	}
 
 	db.shortURLs[shortURL.Alias] = shortURL
-
 	return shortURL, nil
 }
 
 func (db *DB) Ping() error {
 	return nil
+}
+
+func (db *DB) Truncate() {
+	db.shortURLs = make(map[string]*entity.ShortURL)
 }

@@ -154,6 +154,24 @@ func TestCreateShortURL_Errors(t *testing.T) {
 				status: http.StatusUnprocessableEntity,
 			},
 		},
+		{
+			name:    "when passed url is not unique",
+			ucInput: "https://example.com",
+			ucOutput: ucOutput{
+				res: "http://localhost:8080/mock_alias",
+				err: ucErrors.ErrShortURLAlreadyExist,
+			},
+			request: request{
+				body:        bytes.NewBufferString(`{"url":"https://example.com"}`),
+				contentType: "application/json",
+				method:      http.MethodPost,
+				path:        "/api/shorten",
+			},
+			response: response{
+				body:   `{"Result":"http://localhost:8080/mock_alias"}`,
+				status: http.StatusConflict,
+			},
+		},
 	}
 
 	for _, tt := range tests {

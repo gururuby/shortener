@@ -17,12 +17,11 @@ type (
 	}
 
 	App struct {
-		AliasLength           int    `env:"APP_ALIAS_LENGTH" envDefault:"5"`
-		Env                   string `env:"APP_ENV" envDefault:"development"`
-		MaxGenerationAttempts int    `env:"APP_MAX_GENERATION_ATTEMPTS" envDefault:"5"`
-		Name                  string `env:"APP_NAME" envDefault:"Shortener"`
-		Version               string `env:"APP_VERSION" envDefault:"0.0.1"`
-		BaseURL               string `env:"APP_BASE_URL"`
+		AliasLength int    `env:"APP_ALIAS_LENGTH" envDefault:"5"`
+		Env         string `env:"APP_ENV" envDefault:"development"`
+		Name        string `env:"APP_NAME" envDefault:"Shortener"`
+		Version     string `env:"APP_VERSION" envDefault:"0.0.1"`
+		BaseURL     string `env:"APP_BASE_URL"`
 	}
 
 	Server struct {
@@ -72,6 +71,6 @@ func (c *Config) AppInfo() string {
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")
-	flag.StringVar(&cfg.Database.DSN, "d", "", "URL to database")
+	flag.StringVar(&cfg.Database.DSN, "d", "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable", "URL to database")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "ShortURLs storage file")
 }

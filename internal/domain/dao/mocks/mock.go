@@ -83,3 +83,15 @@ func (mr *MockDBMockRecorder) Save(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockDB)(nil).Save), arg0)
 }
+
+// Truncate mocks base method.
+func (m *MockDB) Truncate() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Truncate")
+}
+
+// Truncate indicates an expected call of Truncate.
+func (mr *MockDBMockRecorder) Truncate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Truncate", reflect.TypeOf((*MockDB)(nil).Truncate))
+}

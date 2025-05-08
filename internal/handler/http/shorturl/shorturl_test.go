@@ -52,7 +52,7 @@ func TestCreateShortURLErrors(t *testing.T) {
 	type request struct {
 		method string
 		path   string
-		body   io.Reader
+		body   string
 	}
 
 	type response struct {
@@ -80,12 +80,29 @@ func TestCreateShortURLErrors(t *testing.T) {
 			},
 			request: request{
 				method: http.MethodPost,
-				body:   strings.NewReader("http://example.com"),
+				body:   "http://example.com",
 				path:   "/",
 			},
 			response: response{
 				code:        http.StatusUnprocessableEntity,
 				body:        "invalid source URL, please specify valid URL\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
+		{
+			name: "when use case conflict error",
+			useCaseRes: useCaseResult{
+				res: "http://localhost:8080/mock_alias",
+				err: ucErrors.ErrShortURLAlreadyExist,
+			},
+			request: request{
+				method: http.MethodPost,
+				body:   "https://example.com",
+				path:   "/",
+			},
+			response: response{
+				code:        http.StatusConflict,
+				body:        "http://localhost:8080/mock_alias",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
@@ -108,12 +125,12 @@ func TestCreateShortURLErrors(t *testing.T) {
 			var err error
 			var body []byte
 
-			uc.EXPECT().CreateShortURL(gomock.Any()).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+			uc.EXPECT().CreateShortURL(tt.request.body).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
 
 			r := chi.NewRouter()
 			h := handler{router: r, uc: uc}
 
-			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
+			req := httptest.NewRequest(tt.request.method, tt.request.path, strings.NewReader(tt.request.body))
 			w := httptest.NewRecorder()
 			h.CreateShortURL()(w, req)
 

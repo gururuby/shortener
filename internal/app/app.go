@@ -27,12 +27,14 @@ type DAO interface {
 	FindByAlias(alias string) (*entity.ShortURL, error)
 	Save(sourceURL string) (*entity.ShortURL, error)
 	IsDBReady() error
+	Clear()
 }
 
 type DB interface {
 	Find(string) (*entity.ShortURL, error)
 	Save(*entity.ShortURL) (*entity.ShortURL, error)
 	Ping() error
+	Truncate()
 }
 
 type Router interface {
@@ -65,7 +67,7 @@ func (a *App) Setup() *App {
 		log.Fatalf("cannot setup database: %s", setupErr)
 	}
 
-	storage = dao.New(gen, a.Config, db)
+	storage = dao.New(gen, db)
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logging)

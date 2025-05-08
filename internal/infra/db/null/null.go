@@ -19,3 +19,6 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 func (db *DB) Ping() error {
 	return nil
 }
+
+func (db *DB) Truncate() {
+}

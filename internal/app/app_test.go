@@ -44,15 +44,13 @@ func TestAppOkRequests(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
-	cfg.Database.Type = "memory"
-
 	app := New(cfg).Setup()
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
-	sourceURL := "https://example.com"
-	existingRecord, err := app.Storage.Save(sourceURL)
-	require.NoError(t, err)
+	sourceURL := "https://ya.ru"
+	app.Storage.Clear()
+	existingRecord, _ := app.Storage.Save(sourceURL)
 
 	var tests = []struct {
 		name     string
@@ -63,7 +61,7 @@ func TestAppOkRequests(t *testing.T) {
 		{
 			name: "when create ShortURL via http",
 			request: request{
-				body:    []byte("https://ya.ru"),
+				body:    []byte("https://ya1.ru"),
 				headers: headers{contentType: "text/plain; charset=utf-8"},
 				method:  http.MethodPost,
 				path:    "/",
@@ -77,7 +75,7 @@ func TestAppOkRequests(t *testing.T) {
 		{
 			name: "when create via API",
 			request: request{
-				body:    []byte(`{"url":"https://ya.ru"}`),
+				body:    []byte(`{"url":"https://ya2.ru"}`),
 				headers: headers{contentType: "application/json"},
 				method:  http.MethodPost,
 				path:    "/api/shorten",
@@ -89,9 +87,23 @@ func TestAppOkRequests(t *testing.T) {
 			want: `{"Result":"http://localhost:8080/\w{5}"}`,
 		},
 		{
+			name: "when try to create via API with the same source URL",
+			request: request{
+				body:    []byte(`{"url":"https://ya.ru"}`),
+				headers: headers{contentType: "application/json"},
+				method:  http.MethodPost,
+				path:    "/api/shorten",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusConflict,
+			},
+			want: `{"Result":"http://localhost:8080/\w{5}"}`,
+		},
+		{
 			name: "when batch creating via API",
 			request: request{
-				body:    []byte(`[{"correlation_id":"1","original_url":"https://ya.ru"},{"correlation_id":"2","original_url":"https://ya.ru"}]`),
+				body:    []byte(`[{"correlation_id":"1","original_url":"https://ya3.ru"},{"correlation_id":"2","original_url":"https://ya4.ru"}]`),
 				headers: headers{contentType: "application/json"},
 				method:  http.MethodPost,
 				path:    "/api/shorten/batch",
@@ -136,9 +148,9 @@ func TestAppCompressRequests(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
-	cfg.Database.Type = "memory"
-
 	app := New(cfg).Setup()
+	app.Storage.Clear()
+
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
@@ -151,7 +163,7 @@ func TestAppCompressRequests(t *testing.T) {
 		{
 			name: "when send gzipped text/html",
 			request: compressedRequest{
-				body: zippify(t, "https://ya.ru"),
+				body: zippify(t, "https://ya6.ru"),
 				headers: headers{
 					contentType:     "text/html",
 					contentEncoding: "gzip",
@@ -173,7 +185,7 @@ func TestAppCompressRequests(t *testing.T) {
 		{
 			name: "when content type is a application/json",
 			request: compressedRequest{
-				body: zippify(t, `{"url":"https://ya.ru"}`),
+				body: zippify(t, `{"url":"https://ya7.ru"}`),
 				headers: headers{
 					contentType:     "application/json",
 					contentEncoding: "gzip",
@@ -226,9 +238,9 @@ func TestAppErrorRequests(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
-	cfg.Database.Type = "memory"
-
 	app := New(cfg).Setup()
+	app.Storage.Clear()
+
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 

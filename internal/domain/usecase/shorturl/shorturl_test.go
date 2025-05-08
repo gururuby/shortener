@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"github.com/gururuby/shortener/internal/domain/usecase/shorturl/mocks"
@@ -80,7 +81,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 			dao.EXPECT().FindByAlias(tt.alias).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
 			uc := NewShortURLUseCase(dao, "base")
 			_, err := uc.FindShortURL(tt.alias)
-			require.Error(t, tt.err, err)
+			require.ErrorIs(t, tt.err, err)
 		})
 	}
 }
@@ -152,13 +153,24 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			baseURL:   "http://localhost:8888",
 			err:       ucErrors.ErrShortURLInvalidSourceURL,
 		},
+		{
+			name:      "when passed existing source URL",
+			sourceURL: "http://ya.ru",
+			baseURL:   "http://localhost:8888",
+			daoRes: daoRes{
+				shortURL: &entity.ShortURL{Alias: "alias"},
+				err:      daoErrors.ErrDAORecordIsNotUnique,
+			},
+			err: ucErrors.ErrShortURLAlreadyExist,
+		},
 	}
 	for _, tt := range tests {
+		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
 		uc := NewShortURLUseCase(dao, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := uc.CreateShortURL(tt.sourceURL)
-			require.Error(t, tt.err, err)
+			require.ErrorIs(t, tt.err, err)
 		})
 	}
 }

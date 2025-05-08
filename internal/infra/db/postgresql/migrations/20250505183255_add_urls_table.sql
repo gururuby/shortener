@@ -6,7 +6,7 @@ CREATE TABLE urls (
     original_url varchar(255) NOT NULL
 );
 
-CREATE UNIQUE INDEX ON urls (alias);
+CREATE UNIQUE INDEX ON urls (original_url);
 -- +goose StatementEnd
 
 -- +goose Down

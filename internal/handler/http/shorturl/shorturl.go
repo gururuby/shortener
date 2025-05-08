@@ -3,8 +3,10 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"io"
 	"net/http"
 )
@@ -39,9 +41,12 @@ func Register(router Router, uc ShortURLUseCase) {
 
 func (h *handler) CreateShortURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var reqBody []byte
-		var shortURL string
+		var (
+			err        error
+			reqBody    []byte
+			shortURL   string
+			statusCode = http.StatusCreated
+		)
 
 		if r.Method != http.MethodPost {
 			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), http.StatusMethodNotAllowed)
@@ -66,12 +71,17 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 		shortURL, err = h.uc.CreateShortURL(sourceURL)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
+			if errors.Is(err, ucErrors.ErrShortURLAlreadyExist) {
+				statusCode = http.StatusConflict
+			} else {
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
 		}
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(statusCode)
+
 		_, err = io.WriteString(w, shortURL)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

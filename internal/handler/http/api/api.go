@@ -3,8 +3,10 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	handlerErrors "github.com/gururuby/shortener/internal/handler/errors"
 	"net/http"
 	"time"
@@ -66,11 +68,12 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			ctx    = r.Context()
 			cancel context.CancelFunc
 
-			err      error
-			shortURL string
-			response []byte
-			dto      createShortURLDTO
-			errRes   errorResponse
+			err        error
+			statusCode = http.StatusCreated
+			shortURL   string
+			response   []byte
+			dto        createShortURLDTO
+			errRes     errorResponse
 		)
 
 		_, cancel = context.WithTimeout(ctx, createShortURLTimeout)
@@ -95,10 +98,15 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 		shortURL, err = h.uc.CreateShortURL(dto.request.URL)
 
 		if err != nil {
-			errRes.Error = err.Error()
-			errRes.StatusCode = http.StatusUnprocessableEntity
-			returnErrResponse(errRes, w)
-			return
+			if errors.Is(err, ucErrors.ErrShortURLAlreadyExist) {
+				statusCode = http.StatusConflict
+			} else {
+				errRes.Error = err.Error()
+				errRes.StatusCode = http.StatusUnprocessableEntity
+				returnErrResponse(errRes, w)
+				return
+			}
+
 		}
 
 		dto.response.Result = shortURL
@@ -111,7 +119,7 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(statusCode)
 
 		if _, err = w.Write(response); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

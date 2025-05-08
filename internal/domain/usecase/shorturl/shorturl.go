@@ -3,6 +3,8 @@
 package usecase
 
 import (
+	"errors"
+	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
@@ -39,7 +41,11 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 	result, err := u.dao.Save(sourceURL)
 
 	if err != nil {
-		return "", err
+		if errors.Is(err, daoErrors.ErrDAORecordIsNotUnique) {
+			return u.baseURL + "/" + result.Alias, ucErrors.ErrShortURLAlreadyExist
+		} else {
+			return "", err
+		}
 	}
 
 	return u.baseURL + "/" + result.Alias, nil

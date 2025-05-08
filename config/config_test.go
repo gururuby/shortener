@@ -16,19 +16,18 @@ func TestConfig(t *testing.T) {
 			name: "setup default values",
 			want: &Config{
 				App: App{
-					AliasLength:           5,
-					Env:                   "development",
-					MaxGenerationAttempts: 5,
-					Name:                  "Shortener",
-					Version:               "0.0.1",
-					BaseURL:               "http://localhost:8080",
+					AliasLength: 5,
+					Env:         "development",
+					Name:        "Shortener",
+					Version:     "0.0.1",
+					BaseURL:     "http://localhost:8080",
 				},
 				Server: Server{
 					Address: "localhost:8080",
 				},
 				Database: Database{
-					Type:         "file",
-					DSN:          "",
+					Type:         "postgresql",
+					DSN:          "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable",
 					ConnTryDelay: 5 * time.Second,
 					ConnTryTimes: 5,
 				},
