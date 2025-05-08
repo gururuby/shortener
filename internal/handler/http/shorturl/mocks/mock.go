@@ -12,6 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
+	entity "github.com/gururuby/shortener/internal/domain/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -37,6 +38,20 @@ func NewMockShortURLUseCase(ctrl *gomock.Controller) *MockShortURLUseCase {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockShortURLUseCase) EXPECT() *MockShortURLUseCaseMockRecorder {
 	return m.recorder
+}
+
+// BatchShortURLs mocks base method.
+func (m *MockShortURLUseCase) BatchShortURLs(urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchShortURLs", urls)
+	ret0, _ := ret[0].([]entity.BatchShortURLOutput)
+	return ret0
+}
+
+// BatchShortURLs indicates an expected call of BatchShortURLs.
+func (mr *MockShortURLUseCaseMockRecorder) BatchShortURLs(urls any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchShortURLs", reflect.TypeOf((*MockShortURLUseCase)(nil).BatchShortURLs), urls)
 }
 
 // CreateShortURL mocks base method.

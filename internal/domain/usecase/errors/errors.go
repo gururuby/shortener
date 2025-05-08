@@ -5,8 +5,8 @@ import "errors"
 var (
 	ErrAppDBIsNotReady = errors.New("db is not ready")
 
-	ErrShortURLEmptyBaseURL      = errors.New("empty base URL, please specify base URL")
-	ErrShortURLEmptySourceURL    = errors.New("empty source URL, please specify source URL")
+	ErrShortURLInvalidBaseURL    = errors.New("invalid base URL, please specify valid URL")
+	ErrShortURLInvalidSourceURL  = errors.New("invalid source URL, please specify valid URL")
 	ErrShortURLEmptyAlias        = errors.New("empty alias, please specify alias")
 	ErrShortURLSourceURLNotFound = errors.New("source URL not found")
 )

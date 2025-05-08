@@ -72,7 +72,7 @@ func TestAppOkRequests(t *testing.T) {
 				headers: headers{contentType: "text/plain; charset=utf-8"},
 				status:  http.StatusCreated,
 			},
-			want: "^http://localhost:8080/\\w{5}$",
+			want: `http://localhost:8080/\w{5}`,
 		},
 		{
 			name: "when create via API",
@@ -86,7 +86,21 @@ func TestAppOkRequests(t *testing.T) {
 				headers: headers{contentType: "application/json"},
 				status:  http.StatusCreated,
 			},
-			want: "\\{\"Result\":\"http://localhost:8080/\\w{5}\"\\}",
+			want: `{"Result":"http://localhost:8080/\w{5}"}`,
+		},
+		{
+			name: "when batch creating via API",
+			request: request{
+				body:    []byte(`[{"correlation_id":"1","original_url":"https://ya.ru"},{"correlation_id":"2","original_url":"https://ya.ru"}]`),
+				headers: headers{contentType: "application/json"},
+				method:  http.MethodPost,
+				path:    "/api/shorten/batch",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusCreated,
+			},
+			want: `{"correlation_id":"1","short_url":"http://localhost:8080/\w{5}"},{"correlation_id":"2","short_url":"http://localhost:8080/\w{5}"}`,
 		},
 		{
 			name: "when find ShortURL via http",
@@ -154,7 +168,7 @@ func TestAppCompressRequests(t *testing.T) {
 				},
 				status: http.StatusCreated,
 			},
-			want: "^http://localhost:8080/\\w{5}$",
+			want: `\Ahttp://localhost:8080/\w{5}\z`,
 		},
 		{
 			name: "when content type is a application/json",
@@ -176,7 +190,7 @@ func TestAppCompressRequests(t *testing.T) {
 				},
 				status: http.StatusCreated,
 			},
-			want: "\\{\"Result\":\"http://localhost:8080/\\w{5}\"\\}",
+			want: `{"Result":"http://localhost:8080/\w{5}"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -237,6 +251,24 @@ func TestAppErrorRequests(t *testing.T) {
 			},
 			want: "record not found\n",
 		},
+		{
+			name: "when passed incorrect url via API",
+			request: request{
+				body: []byte(`{"url":"//ya.ru"}`),
+				headers: headers{
+					contentType:     "application/json",
+					contentEncoding: "application/json",
+					acceptEncoding:  "application/json",
+				},
+				method: http.MethodPost,
+				path:   "/api/shorten",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusUnprocessableEntity,
+			},
+			want: `{"StatusCode":422,"Error":"invalid source URL, please specify valid URL"}`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -259,9 +291,13 @@ func testRequest(t *testing.T, ts *httptest.Server, r request) (*http.Response, 
 	var resp *http.Response
 
 	req, err = http.NewRequest(r.method, ts.URL+r.path, bytes.NewReader(r.body))
-	require.NoError(t, err)
 
+	req.RequestURI = ""
 	req.Header.Set("Content-Type", r.headers.contentType)
+	req.Header.Set("Content-Encoding", r.headers.contentEncoding)
+	req.Header.Set("Accept-Encoding", r.headers.acceptEncoding)
+
+	require.NoError(t, err)
 
 	resp, err = ts.Client().Do(req)
 	require.NoError(t, err)

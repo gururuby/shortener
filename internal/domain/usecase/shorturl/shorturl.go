@@ -5,6 +5,8 @@ package usecase
 import (
 	"github.com/gururuby/shortener/internal/domain/entity"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	"github.com/gururuby/shortener/internal/infra/logger"
+	"github.com/gururuby/shortener/internal/infra/utils/validator"
 	"strings"
 )
 
@@ -26,12 +28,12 @@ func NewShortURLUseCase(dao DAO, baseURL string) *ShortURLUseCase {
 }
 
 func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
-	if u.baseURL == "" {
-		return "", ucErrors.ErrShortURLEmptyBaseURL
+	if validator.IsInvalidURL(u.baseURL) {
+		return "", ucErrors.ErrShortURLInvalidBaseURL
 	}
 
-	if sourceURL == "" {
-		return "", ucErrors.ErrShortURLEmptySourceURL
+	if validator.IsInvalidURL(sourceURL) {
+		return "", ucErrors.ErrShortURLInvalidSourceURL
 	}
 
 	result, err := u.dao.Save(sourceURL)
@@ -43,7 +45,7 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 	return u.baseURL + "/" + result.Alias, nil
 }
 
-func (u ShortURLUseCase) FindShortURL(alias string) (string, error) {
+func (u *ShortURLUseCase) FindShortURL(alias string) (string, error) {
 	alias = strings.TrimPrefix(alias, "/")
 
 	if alias == "" {
@@ -60,4 +62,19 @@ func (u ShortURLUseCase) FindShortURL(alias string) (string, error) {
 	}
 
 	return res.SourceURL, nil
+}
+
+func (u *ShortURLUseCase) BatchShortURLs(urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput {
+	var res []entity.BatchShortURLOutput
+
+	for _, url := range urls {
+		shortURL, err := u.CreateShortURL(url.OriginalURL)
+		if err != nil {
+			logger.Log.Info(err.Error())
+			continue
+		}
+		res = append(res, entity.BatchShortURLOutput{CorrelationID: url.CorrelationID, ShortURL: shortURL})
+	}
+
+	return res
 }

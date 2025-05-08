@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestFindShortURL_Ok(t *testing.T) {
+func TestFindShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
 
@@ -24,7 +24,7 @@ func TestFindShortURL_Ok(t *testing.T) {
 		res    string
 	}{
 		{
-			name:   "when find sourceURL in db",
+			name:   "when record exist in db",
 			alias:  "alias1",
 			daoRes: daoRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
 			res:    "https://ya.ru",
@@ -85,7 +85,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 	}
 }
 
-func TestCreateShortURL_Ok(t *testing.T) {
+func TestCreateShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
 
@@ -109,7 +109,7 @@ func TestCreateShortURL_Ok(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, nil).AnyTimes()
+		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, nil)
 		uc := NewShortURLUseCase(dao, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,21 +139,65 @@ func TestCreateShortURL_Errors(t *testing.T) {
 		{
 			name:    "when passed empty base URL",
 			baseURL: "",
-			err:     ucErrors.ErrShortURLEmptyBaseURL,
+			err:     ucErrors.ErrShortURLInvalidBaseURL,
 		},
 		{
 			name:    "when passed empty source URL",
 			baseURL: "http://localhost:8888",
-			err:     ucErrors.ErrShortURLEmptySourceURL,
+			err:     ucErrors.ErrShortURLInvalidSourceURL,
+		},
+		{
+			name:      "when passed invalid source URL",
+			sourceURL: "h://abcd",
+			baseURL:   "http://localhost:8888",
+			err:       ucErrors.ErrShortURLInvalidSourceURL,
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
 		uc := NewShortURLUseCase(dao, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := uc.CreateShortURL(tt.sourceURL)
 			require.Error(t, tt.err, err)
+		})
+	}
+}
+
+func TestBatchShortURLs_OK(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	dao := mocks.NewMockDAO(ctrl)
+
+	var urls []entity.BatchShortURLInput
+	urls = append(urls,
+		entity.BatchShortURLInput{CorrelationID: "1", OriginalURL: "https://ya.ru"},
+		entity.BatchShortURLInput{CorrelationID: "2", OriginalURL: "https://ya.com"},
+	)
+
+	dao.EXPECT().Save(urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
+	dao.EXPECT().Save(urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
+
+	tests := []struct {
+		name    string
+		baseURL string
+		urls    []entity.BatchShortURLInput
+		result  []entity.BatchShortURLOutput
+	}{
+		{
+			name:    "when successfully batch proceed",
+			baseURL: "http://localhost:8080",
+			urls:    urls,
+			result: []entity.BatchShortURLOutput{
+				{CorrelationID: "1", ShortURL: "http://localhost:8080/alias1"},
+				{CorrelationID: "2", ShortURL: "http://localhost:8080/alias2"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		uc := NewShortURLUseCase(dao, tt.baseURL)
+
+		t.Run(tt.name, func(t *testing.T) {
+			res := uc.BatchShortURLs(tt.urls)
+			require.Equal(t, tt.result, res)
 		})
 	}
 }

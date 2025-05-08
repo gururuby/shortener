@@ -76,7 +76,7 @@ func TestCreateShortURLErrors(t *testing.T) {
 			name: "when use case returns some error",
 			useCaseRes: useCaseResult{
 				res: "",
-				err: ucErrors.ErrShortURLEmptySourceURL,
+				err: ucErrors.ErrShortURLInvalidSourceURL,
 			},
 			request: request{
 				method: http.MethodPost,
@@ -85,7 +85,7 @@ func TestCreateShortURLErrors(t *testing.T) {
 			},
 			response: response{
 				code:        http.StatusUnprocessableEntity,
-				body:        "empty source URL, please specify source URL\n",
+				body:        "invalid source URL, please specify valid URL\n",
 				contentType: "text/plain; charset=utf-8",
 			},
 		},

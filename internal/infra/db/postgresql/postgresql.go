@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . Client
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DBPool
 
 package postgresql
 

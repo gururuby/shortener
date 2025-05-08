@@ -13,6 +13,16 @@ type ShortURL struct {
 	Alias     string
 }
 
+type BatchShortURLInput struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type BatchShortURLOutput struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
+
 func NewShortURL(g Generator, sourceURL string) *ShortURL {
 	return &ShortURL{
 		UUID:      g.UUID(),

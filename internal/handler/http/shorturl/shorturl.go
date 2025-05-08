@@ -4,6 +4,7 @@ package handler
 
 import (
 	"fmt"
+	"github.com/gururuby/shortener/internal/domain/entity"
 	"io"
 	"net/http"
 )
@@ -21,6 +22,7 @@ type Router interface {
 type ShortURLUseCase interface {
 	CreateShortURL(sourceURL string) (string, error)
 	FindShortURL(alias string) (string, error)
+	BatchShortURLs(urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput
 }
 
 type handler struct {
