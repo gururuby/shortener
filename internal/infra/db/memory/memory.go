@@ -24,8 +24,29 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
+func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+	var (
+		shortURL  *entity.ShortURL
+		noRecords = true
+	)
+
+	for _, url := range db.shortURLs {
+		if url.SourceURL == sourceURL {
+			shortURL = url
+			noRecords = false
+			break
+		}
+	}
+
+	if noRecords {
+		return nil, dbErrors.ErrDBRecordNotFound
+	}
+
+	return shortURL, nil
+}
+
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
-	existRecord, _ := db.Find(shortURL.Alias)
+	existRecord, _ := db.findBySourceURL(shortURL.SourceURL)
 	if existRecord != nil {
 		return existRecord, dbErrors.ErrDBIsNotUnique
 	}

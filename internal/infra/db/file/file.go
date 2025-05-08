@@ -86,13 +86,37 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
+func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+	var (
+		shortURL  *entity.ShortURL
+		noRecords = true
+	)
+
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
+	for _, url := range db.shortURLs {
+		if url.SourceURL == sourceURL {
+			shortURL = url
+			noRecords = false
+			break
+		}
+	}
+
+	if noRecords {
+		return nil, dbErrors.ErrDBRecordNotFound
+	}
+
+	return shortURL, nil
+}
+
 func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var err error
 	var record *entity.ShortURL
 	var data []byte
 
-	if record, _ = db.Find(shortURL.Alias); record != nil {
-		return nil, dbErrors.ErrDBIsNotUnique
+	if record, _ = db.findBySourceURL(shortURL.SourceURL); record != nil {
+		return record, dbErrors.ErrDBIsNotUnique
 	}
 
 	db.mutex.Lock()

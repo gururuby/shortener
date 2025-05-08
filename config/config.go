@@ -31,7 +31,7 @@ type (
 	Database struct {
 		ConnTryDelay time.Duration `env:"DATABASE_CONN_TRY_DELAY" envDefault:"5s"`
 		ConnTryTimes int           `env:"DATABASE_CONN_TRY_TIMES" envDefault:"5"`
-		Type         string        `env:"DATABASE_TYPE" envDefault:"postgresql"`
+		Type         string        `env:"DATABASE_TYPE"`
 		DSN          string        `env:"DATABASE_DSN"`
 	}
 
@@ -59,6 +59,8 @@ func New() (*Config, error) {
 		} else {
 			cfg.Database.Type = "file"
 		}
+	} else {
+		cfg.Database.Type = "postgresql"
 	}
 
 	return &cfg, nil
@@ -71,6 +73,6 @@ func (c *Config) AppInfo() string {
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL of short URLs")
-	flag.StringVar(&cfg.Database.DSN, "d", "postgresql://postgres:pass@0.0.0.0:5432/shortener?sslmode=disable", "URL to database")
+	flag.StringVar(&cfg.Database.DSN, "d", "", "URL to database")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "ShortURLs storage file")
 }

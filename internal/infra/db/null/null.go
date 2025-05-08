@@ -1,6 +1,8 @@
 package null
 
-import "github.com/gururuby/shortener/internal/domain/entity"
+import (
+	"github.com/gururuby/shortener/internal/domain/entity"
+)
 
 type DB struct{}
 
@@ -9,6 +11,10 @@ func New() *DB {
 }
 
 func (db *DB) Find(_ string) (*entity.ShortURL, error) {
+	return nil, nil
+}
+
+func (db *DB) findBySourceURL(_ string) (*entity.ShortURL, error) {
 	return nil, nil
 }
 
