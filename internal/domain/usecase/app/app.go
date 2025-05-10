@@ -3,7 +3,7 @@
 package usecase
 
 import (
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 )
 
 type Storage interface {

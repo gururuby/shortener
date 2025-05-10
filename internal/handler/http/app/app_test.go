@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/go-chi/chi/v5"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 	"github.com/gururuby/shortener/internal/handler/http/app/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

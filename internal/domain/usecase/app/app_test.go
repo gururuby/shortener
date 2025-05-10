@@ -2,8 +2,8 @@ package usecase
 
 import (
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 	"github.com/gururuby/shortener/internal/domain/usecase/app/mocks"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"

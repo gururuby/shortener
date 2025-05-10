@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/validator"
 	"strings"

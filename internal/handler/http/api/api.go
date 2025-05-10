@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	apiErrors "github.com/gururuby/shortener/internal/handler/http/api/errors"
 	"net/http"
 	"time"
