@@ -12,7 +12,7 @@ package mocks
 import (
 	reflect "reflect"
 
-	entity "github.com/gururuby/shortener/internal/domain/entity"
+	entity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	gomock "go.uber.org/mock/gomock"
 )
 

@@ -5,7 +5,7 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"io"
 	"net/http"

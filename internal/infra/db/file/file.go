@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"os"
 	"sync"

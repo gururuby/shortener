@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
 	"github.com/gururuby/shortener/internal/domain/usecase/app/mocks"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"github.com/stretchr/testify/require"
@@ -11,17 +11,17 @@ import (
 
 func TestPingDB(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mocks.NewMockDAO(ctrl)
-	uc := NewAppUseCase(dao)
+	storage := mocks.NewMockStorage(ctrl)
+	uc := NewAppUseCase(storage)
 
 	t.Run("when all is ok with db", func(t *testing.T) {
-		dao.EXPECT().IsDBReady().Return(nil)
+		storage.EXPECT().IsDBReady().Return(nil)
 		err := uc.PingDB()
 		require.NoError(t, err)
 	})
 
 	t.Run("when something wrong with db", func(t *testing.T) {
-		dao.EXPECT().IsDBReady().Return(daoErrors.ErrDAOIsNotReadyDB)
+		storage.EXPECT().IsDBReady().Return(storageErrors.ErrStorageIsNotReadyDB)
 		err := uc.PingDB()
 		require.ErrorIs(t, ucErrors.ErrAppDBIsNotReady, err)
 	})

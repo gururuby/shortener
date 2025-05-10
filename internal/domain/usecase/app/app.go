@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DAO
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . Storage
 
 package usecase
 
@@ -6,22 +6,22 @@ import (
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 )
 
-type DAO interface {
+type Storage interface {
 	IsDBReady() error
 }
 
 type AppUseCase struct {
-	dao DAO
+	storage Storage
 }
 
-func NewAppUseCase(dao DAO) *AppUseCase {
+func NewAppUseCase(storage Storage) *AppUseCase {
 	return &AppUseCase{
-		dao: dao,
+		storage: storage,
 	}
 }
 
 func (uc *AppUseCase) PingDB() error {
-	if err := uc.dao.IsDBReady(); err != nil {
+	if err := uc.storage.IsDBReady(); err != nil {
 		return ucErrors.ErrAppDBIsNotReady
 	}
 	return nil

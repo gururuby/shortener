@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"github.com/gururuby/shortener/internal/domain/entity/mocks"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	"testing"

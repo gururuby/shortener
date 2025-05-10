@@ -1,22 +1,22 @@
-package dao
+package storage
 
 import (
-	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
-	daoMock "github.com/gururuby/shortener/internal/domain/dao/mocks"
-	"github.com/gururuby/shortener/internal/domain/entity"
-	entityMock "github.com/gururuby/shortener/internal/domain/entity/mocks"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	entityMock "github.com/gururuby/shortener/internal/domain/entity/shorturl/mocks"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
+	storageMock "github.com/gururuby/shortener/internal/domain/storage/shorturl/mocks"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
 )
 
-func TestDAO_FindByAlias_Ok(t *testing.T) {
+func TestStorage_FindByAlias_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := daoMock.NewMockDB(ctrl)
+	db := storageMock.NewMockDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
 
-	dao := New(gen, db)
+	storage := New(gen, db)
 
 	type dbRecord struct {
 		value *entity.ShortURL
@@ -38,18 +38,18 @@ func TestDAO_FindByAlias_Ok(t *testing.T) {
 		db.EXPECT().Find(tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := dao.FindByAlias(tt.alias)
+			res, err := storage.FindByAlias(tt.alias)
 			require.NoError(t, err)
 			require.Equal(t, tt.dbRecord.value, res)
 		})
 	}
 }
 
-func TestDAO_FindByAlias_Errors(t *testing.T) {
+func TestStorage_FindByAlias_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := daoMock.NewMockDB(ctrl)
+	db := storageMock.NewMockDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
-	dao := New(gen, db)
+	storage := New(gen, db)
 
 	type result struct {
 		value *entity.ShortURL
@@ -64,28 +64,28 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 		{
 			name:   "when cannot find record in db by alias",
 			alias:  "unknown_alias",
-			result: result{err: daoErrors.ErrDAORecordNotFound},
+			result: result{err: storageErrors.ErrStorageRecordNotFound},
 		},
 	}
 	for _, tt := range tests {
 		db.EXPECT().Find(tt.alias).Return(tt.result.value, tt.result.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := dao.FindByAlias(tt.alias)
+			_, err := storage.FindByAlias(tt.alias)
 			require.Error(t, tt.result.err, err)
 		})
 	}
 }
 
-func TestDAO_Save_Ok(t *testing.T) {
+func TestStorage_Save_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := daoMock.NewMockDB(ctrl)
+	db := storageMock.NewMockDB(ctrl)
 
 	gen := entityMock.NewMockGenerator(ctrl)
 	gen.EXPECT().UUID().Return("UUID")
 	gen.EXPECT().Alias().Return("alias")
 
-	dao := New(gen, db)
+	storage := New(gen, db)
 
 	tests := []struct {
 		name      string
@@ -105,7 +105,7 @@ func TestDAO_Save_Ok(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			db.EXPECT().Save(tt.res).Return(tt.res, nil)
-			res, err := dao.Save(tt.sourceURL)
+			res, err := storage.Save(tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
@@ -114,20 +114,20 @@ func TestDAO_Save_Ok(t *testing.T) {
 
 func TestIsDBReady(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := daoMock.NewMockDB(ctrl)
+	db := storageMock.NewMockDB(ctrl)
 
 	gen := entityMock.NewMockGenerator(ctrl)
-	dao := New(gen, db)
+	storage := New(gen, db)
 
 	t.Run("when DB ping is ok", func(t *testing.T) {
 		db.EXPECT().Ping().Return(nil)
-		err := dao.IsDBReady()
+		err := storage.IsDBReady()
 		require.NoError(t, err)
 	})
 
 	t.Run("when DB ping is failed", func(t *testing.T) {
 		db.EXPECT().Ping().Return(dbErrors.ErrDBIsNotHealthy)
-		err := dao.IsDBReady()
-		require.Error(t, daoErrors.ErrDAOIsNotReadyDB, err)
+		err := storage.IsDBReady()
+		require.Error(t, storageErrors.ErrStorageIsNotReadyDB, err)
 	})
 }

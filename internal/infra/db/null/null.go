@@ -1,7 +1,7 @@
 package null
 
 import (
-	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 )
 
 type DB struct{}

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
-	handlerErrors "github.com/gururuby/shortener/internal/handler/errors"
+	apiErrors "github.com/gururuby/shortener/internal/handler/http/api/errors"
 	"net/http"
 	"time"
 )
@@ -159,7 +159,7 @@ func (h *handler) BatchShortURLs() http.HandlerFunc {
 		}
 
 		if len(dto.inputURLs) == 0 {
-			errRes.Error = handlerErrors.ErrAPIEmptyBatch.Error()
+			errRes.Error = apiErrors.ErrAPIEmptyBatch.Error()
 			errRes.StatusCode = http.StatusBadRequest
 			returnErrResponse(errRes, w)
 			return

@@ -1,6 +1,6 @@
-package entity
-
 //go:generate mockgen -destination=./mocks/mock.go -package=mocks . Generator
+
+package entity
 
 type Generator interface {
 	UUID() string

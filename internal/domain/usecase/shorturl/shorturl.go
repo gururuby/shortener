@@ -1,30 +1,30 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DAO
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . Storage
 
 package usecase
 
 import (
 	"errors"
-	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
-	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/validator"
 	"strings"
 )
 
-type DAO interface {
+type Storage interface {
 	FindByAlias(alias string) (*entity.ShortURL, error)
 	Save(sourceURL string) (*entity.ShortURL, error)
 }
 
 type ShortURLUseCase struct {
 	baseURL string
-	dao     DAO
+	storage Storage
 }
 
-func NewShortURLUseCase(dao DAO, baseURL string) *ShortURLUseCase {
+func NewShortURLUseCase(storage Storage, baseURL string) *ShortURLUseCase {
 	return &ShortURLUseCase{
-		dao:     dao,
+		storage: storage,
 		baseURL: baseURL,
 	}
 }
@@ -38,10 +38,10 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 		return "", ucErrors.ErrShortURLInvalidSourceURL
 	}
 
-	result, err := u.dao.Save(sourceURL)
+	result, err := u.storage.Save(sourceURL)
 
 	if err != nil {
-		if errors.Is(err, daoErrors.ErrDAORecordIsNotUnique) {
+		if errors.Is(err, storageErrors.ErrStorageRecordIsNotUnique) {
 			return u.baseURL + "/" + result.Alias, ucErrors.ErrShortURLAlreadyExist
 		} else {
 			return "", err
@@ -58,7 +58,7 @@ func (u *ShortURLUseCase) FindShortURL(alias string) (string, error) {
 		return "", ucErrors.ErrShortURLEmptyAlias
 	}
 
-	res, err := u.dao.FindByAlias(alias)
+	res, err := u.storage.FindByAlias(alias)
 	if err != nil {
 		return "", err
 	}

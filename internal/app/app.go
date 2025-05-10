@@ -5,36 +5,24 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/gururuby/shortener/config"
-	"github.com/gururuby/shortener/internal/domain/dao"
-	"github.com/gururuby/shortener/internal/domain/entity"
-	ucApp "github.com/gururuby/shortener/internal/domain/usecase/app"
-	ucShortURL "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
-	handlerAPI "github.com/gururuby/shortener/internal/handler/http/api"
-	handlerApp "github.com/gururuby/shortener/internal/handler/http/app"
-	handlerShortURL "github.com/gururuby/shortener/internal/handler/http/shorturl"
-	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
-	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
-	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
-	postgresqlDB "github.com/gururuby/shortener/internal/infra/db/postgresql"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	"github.com/gururuby/shortener/internal/domain/storage/shorturl"
+	appUseCase "github.com/gururuby/shortener/internal/domain/usecase/app"
+	shortURLUseCase "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
+	apiHandler "github.com/gururuby/shortener/internal/handler/http/api"
+	appHandler "github.com/gururuby/shortener/internal/handler/http/app"
+	shortURLHandler "github.com/gururuby/shortener/internal/handler/http/shorturl"
 	"github.com/gururuby/shortener/internal/infra/logger"
-	"github.com/gururuby/shortener/internal/infra/utils/generator"
 	"github.com/gururuby/shortener/internal/middleware"
 	"log"
 	"net/http"
 )
 
-type DAO interface {
+type Storage interface {
 	FindByAlias(alias string) (*entity.ShortURL, error)
 	Save(sourceURL string) (*entity.ShortURL, error)
 	IsDBReady() error
 	Clear()
-}
-
-type DB interface {
-	Find(string) (*entity.ShortURL, error)
-	Save(*entity.ShortURL) (*entity.ShortURL, error)
-	Ping() error
-	Truncate()
 }
 
 type Router interface {
@@ -42,7 +30,7 @@ type Router interface {
 }
 
 type App struct {
-	Storage DAO
+	Storage Storage
 	Config  *config.Config
 	Router  Router
 }
@@ -53,58 +41,37 @@ func New(cfg *config.Config) *App {
 
 func (a *App) Setup() *App {
 	var setupErr error
-	var storage DAO
-	var db DB
+	var stg Storage
 
 	ctx := context.Background()
 
 	logger.Initialize(a.Config.App.Env, a.Config.Log.Level)
 
-	gen := generator.New(a.Config.App.AliasLength)
+	stg, setupErr = storage.Setup(ctx, a.Config)
 
-	db, setupErr = setupDB(ctx, a.Config)
 	if setupErr != nil {
-		log.Fatalf("cannot setup database: %s", setupErr)
+		log.Fatalf("cannot setup storage: %s", setupErr)
 	}
-
-	storage = dao.New(gen, db)
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logging)
 	router.Use(middleware.Compression)
 
-	shortURLUseCase := ucShortURL.NewShortURLUseCase(storage, a.Config.App.BaseURL)
-	appUseCase := ucApp.NewAppUseCase(storage)
+	shortURLUC := shortURLUseCase.NewShortURLUseCase(stg, a.Config.App.BaseURL)
+	appUC := appUseCase.NewAppUseCase(stg)
 
-	handlerShortURL.Register(router, shortURLUseCase)
-	handlerApp.Register(router, appUseCase)
-	handlerAPI.Register(router, shortURLUseCase)
+	shortURLHandler.Register(router, shortURLUC)
+	appHandler.Register(router, appUC)
+	apiHandler.Register(router, shortURLUC)
 
-	a.Storage = storage
+	a.Storage = stg
 	a.Router = router
 
 	return a
 }
 
 func (a *App) Run() {
-	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
+	welcomeMsg := fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address)
+	logger.Log.Info(welcomeMsg)
 	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
-}
-
-func setupDB(ctx context.Context, cfg *config.Config) (db DB, err error) {
-	switch cfg.Database.Type {
-	case "memory":
-		db = memoryDB.New()
-	case "file":
-		if db, err = fileDB.New(cfg.FileStorage.Path); err != nil {
-			log.Fatalf("cannot setup file DB: %s", err)
-		}
-	case "postgresql":
-		if db, err = postgresqlDB.New(ctx, cfg); err != nil {
-			log.Fatalf("cannot setup postgresql DB: %s", err)
-		}
-	default:
-		db = nullDB.New()
-	}
-	return
 }

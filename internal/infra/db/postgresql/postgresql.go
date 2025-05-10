@@ -7,7 +7,7 @@ import (
 	"embed"
 	"errors"
 	"github.com/gururuby/shortener/config"
-	"github.com/gururuby/shortener/internal/domain/entity"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/retry"
