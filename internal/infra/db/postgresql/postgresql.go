@@ -23,10 +23,9 @@ import (
 var migrations embed.FS
 
 const (
-	findQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1 LIMIT 1`
-	findBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1 LIMIT 1`
+	findQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1`
+	findBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
 	saveQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
-	truncateQuery        = `TRUNCATE TABLE urls`
 )
 
 type DBPool interface {
@@ -37,7 +36,6 @@ type DBPool interface {
 }
 
 type DB struct {
-	ctx  context.Context
 	pool DBPool
 }
 
@@ -65,7 +63,6 @@ func New(ctx context.Context, cfg *config.Config) (*DB, error) {
 	}
 
 	return &DB{
-		ctx:  ctx,
 		pool: pool,
 	}, nil
 }
@@ -93,9 +90,9 @@ func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) 
 	return pool, err
 }
 
-func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+func (db *DB) Find(ctx context.Context, alias string) (*entity.ShortURL, error) {
 	shortURL := entity.ShortURL{Alias: alias}
-	err := db.pool.QueryRow(db.ctx, findQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
+	err := db.pool.QueryRow(ctx, findQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
 
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -105,49 +102,50 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return &shortURL, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *DB) Save(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var (
-		err   error
-		pgErr *pgconn.PgError
+		err              error
+		pgErr            *pgconn.PgError
+		existingShortURL *entity.ShortURL
 	)
 
-	_, err = db.pool.Exec(db.ctx, saveQuery, shortURL.Alias, shortURL.SourceURL)
+	if existingShortURL, err = db.findBySourceURL(ctx, shortURL.SourceURL); err == nil {
+		return existingShortURL, dbErrors.ErrDBIsNotUnique
+	}
 
-	if err != nil {
+	if errors.Is(err, dbErrors.ErrDBRecordNotFound) {
+		if _, err = db.pool.Exec(ctx, saveQuery, shortURL.Alias, shortURL.SourceURL); err == nil {
+			return shortURL, nil
+		}
+
+		logger.Log.Error(err.Error())
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == pgerrcode.UniqueViolation {
-				shortURL, err = db.findBySourceURL(shortURL.SourceURL)
-				if err != nil {
-					return nil, err
-				}
 				return shortURL, dbErrors.ErrDBIsNotUnique
 			}
 			return nil, dbErrors.ErrDBQuery
 		}
 	}
 
-	return shortURL, nil
+	return nil, err
 }
 
-func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+func (db *DB) findBySourceURL(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
 	shortURL := entity.ShortURL{SourceURL: sourceURL}
-	err := db.pool.QueryRow(db.ctx, findBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
+	err := db.pool.QueryRow(ctx, findBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
 
 	if err != nil {
-		logger.Log.Error(err.Error())
-		return nil, dbErrors.ErrDBRecordNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, dbErrors.ErrDBRecordNotFound
+		} else {
+			return nil, dbErrors.ErrDBQuery
+		}
+
 	}
 
 	return &shortURL, nil
 }
 
-func (db *DB) Ping() error {
-	return db.pool.Ping(context.Background())
-}
-
-func (db *DB) Truncate() {
-	_, err := db.pool.Exec(db.ctx, truncateQuery)
-	if err != nil {
-		logger.Log.Error(err.Error())
-	}
+func (db *DB) Ping(ctx context.Context) error {
+	return db.pool.Ping(ctx)
 }

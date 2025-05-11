@@ -74,7 +74,7 @@ func TestCreateShortURL_OK(t *testing.T) {
 			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
 			req.Header.Set("Content-Type", tt.request.contentType)
 			w := httptest.NewRecorder()
-			uc.EXPECT().CreateShortURL(tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
+			uc.EXPECT().CreateShortURL(gomock.Any(), tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
 			h.CreateShortURL()(w, req)
 
 			resp := w.Result()
@@ -179,9 +179,11 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
 			req.Header.Set("Content-Type", tt.request.contentType)
 			w := httptest.NewRecorder()
+
 			if tt.ucInput != "" {
-				uc.EXPECT().CreateShortURL(tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
+				uc.EXPECT().CreateShortURL(gomock.Any(), tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
 			}
+
 			h.CreateShortURL()(w, req)
 
 			resp := w.Result()

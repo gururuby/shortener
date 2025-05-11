@@ -3,11 +3,12 @@
 package usecase
 
 import (
+	"context"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 )
 
 type DAO interface {
-	IsDBReady() error
+	IsDBReady(ctx context.Context) error
 }
 
 type AppUseCase struct {
@@ -20,8 +21,8 @@ func NewAppUseCase(dao DAO) *AppUseCase {
 	}
 }
 
-func (uc *AppUseCase) PingDB() error {
-	if err := uc.dao.IsDBReady(); err != nil {
+func (uc *AppUseCase) PingDB(ctx context.Context) error {
+	if err := uc.dao.IsDBReady(ctx); err != nil {
 		return ucErrors.ErrAppDBIsNotReady
 	}
 	return nil

@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	entity "github.com/gururuby/shortener/internal/domain/entity"
@@ -41,45 +42,45 @@ func (m *MockShortURLUseCase) EXPECT() *MockShortURLUseCaseMockRecorder {
 }
 
 // BatchShortURLs mocks base method.
-func (m *MockShortURLUseCase) BatchShortURLs(urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput {
+func (m *MockShortURLUseCase) BatchShortURLs(ctx context.Context, urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BatchShortURLs", urls)
+	ret := m.ctrl.Call(m, "BatchShortURLs", ctx, urls)
 	ret0, _ := ret[0].([]entity.BatchShortURLOutput)
 	return ret0
 }
 
 // BatchShortURLs indicates an expected call of BatchShortURLs.
-func (mr *MockShortURLUseCaseMockRecorder) BatchShortURLs(urls any) *gomock.Call {
+func (mr *MockShortURLUseCaseMockRecorder) BatchShortURLs(ctx, urls any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchShortURLs", reflect.TypeOf((*MockShortURLUseCase)(nil).BatchShortURLs), urls)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchShortURLs", reflect.TypeOf((*MockShortURLUseCase)(nil).BatchShortURLs), ctx, urls)
 }
 
 // CreateShortURL mocks base method.
-func (m *MockShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
+func (m *MockShortURLUseCase) CreateShortURL(ctx context.Context, sourceURL string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateShortURL", sourceURL)
+	ret := m.ctrl.Call(m, "CreateShortURL", ctx, sourceURL)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateShortURL indicates an expected call of CreateShortURL.
-func (mr *MockShortURLUseCaseMockRecorder) CreateShortURL(sourceURL any) *gomock.Call {
+func (mr *MockShortURLUseCaseMockRecorder) CreateShortURL(ctx, sourceURL any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURL", reflect.TypeOf((*MockShortURLUseCase)(nil).CreateShortURL), sourceURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateShortURL", reflect.TypeOf((*MockShortURLUseCase)(nil).CreateShortURL), ctx, sourceURL)
 }
 
 // FindShortURL mocks base method.
-func (m *MockShortURLUseCase) FindShortURL(alias string) (string, error) {
+func (m *MockShortURLUseCase) FindShortURL(ctx context.Context, alias string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindShortURL", alias)
+	ret := m.ctrl.Call(m, "FindShortURL", ctx, alias)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindShortURL indicates an expected call of FindShortURL.
-func (mr *MockShortURLUseCaseMockRecorder) FindShortURL(alias any) *gomock.Call {
+func (mr *MockShortURLUseCaseMockRecorder) FindShortURL(ctx, alias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindShortURL", reflect.TypeOf((*MockShortURLUseCase)(nil).FindShortURL), alias)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindShortURL", reflect.TypeOf((*MockShortURLUseCase)(nil).FindShortURL), ctx, alias)
 }

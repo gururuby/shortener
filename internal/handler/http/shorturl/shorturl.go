@@ -3,6 +3,7 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -22,9 +23,9 @@ type Router interface {
 }
 
 type ShortURLUseCase interface {
-	CreateShortURL(sourceURL string) (string, error)
-	FindShortURL(alias string) (string, error)
-	BatchShortURLs(urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput
+	CreateShortURL(ctx context.Context, sourceURL string) (string, error)
+	FindShortURL(ctx context.Context, alias string) (string, error)
+	BatchShortURLs(ctx context.Context, urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput
 }
 
 type handler struct {
@@ -68,7 +69,7 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			}
 		}(r.Body)
 
-		shortURL, err = h.uc.CreateShortURL(sourceURL)
+		shortURL, err = h.uc.CreateShortURL(r.Context(), sourceURL)
 
 		if err != nil {
 			if errors.Is(err, ucErrors.ErrShortURLAlreadyExist) {
@@ -95,7 +96,7 @@ func (h *handler) FindShortURL() http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), http.StatusMethodNotAllowed)
 			return
 		}
-		result, err := h.uc.FindShortURL(r.URL.Path)
+		result, err := h.uc.FindShortURL(r.Context(), r.URL.Path)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)

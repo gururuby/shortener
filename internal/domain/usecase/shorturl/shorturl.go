@@ -3,6 +3,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -13,8 +14,8 @@ import (
 )
 
 type DAO interface {
-	FindByAlias(alias string) (*entity.ShortURL, error)
-	Save(sourceURL string) (*entity.ShortURL, error)
+	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
+	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
 }
 
 type ShortURLUseCase struct {
@@ -29,7 +30,7 @@ func NewShortURLUseCase(dao DAO, baseURL string) *ShortURLUseCase {
 	}
 }
 
-func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
+func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, sourceURL string) (string, error) {
 	if validator.IsInvalidURL(u.baseURL) {
 		return "", ucErrors.ErrShortURLInvalidBaseURL
 	}
@@ -38,7 +39,7 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 		return "", ucErrors.ErrShortURLInvalidSourceURL
 	}
 
-	result, err := u.dao.Save(sourceURL)
+	result, err := u.dao.Save(ctx, sourceURL)
 
 	if err != nil {
 		if errors.Is(err, daoErrors.ErrDAORecordIsNotUnique) {
@@ -51,14 +52,14 @@ func (u *ShortURLUseCase) CreateShortURL(sourceURL string) (string, error) {
 	return u.baseURL + "/" + result.Alias, nil
 }
 
-func (u *ShortURLUseCase) FindShortURL(alias string) (string, error) {
+func (u *ShortURLUseCase) FindShortURL(ctx context.Context, alias string) (string, error) {
 	alias = strings.TrimPrefix(alias, "/")
 
 	if alias == "" {
 		return "", ucErrors.ErrShortURLEmptyAlias
 	}
 
-	res, err := u.dao.FindByAlias(alias)
+	res, err := u.dao.FindByAlias(ctx, alias)
 	if err != nil {
 		return "", err
 	}
@@ -70,11 +71,11 @@ func (u *ShortURLUseCase) FindShortURL(alias string) (string, error) {
 	return res.SourceURL, nil
 }
 
-func (u *ShortURLUseCase) BatchShortURLs(urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput {
+func (u *ShortURLUseCase) BatchShortURLs(ctx context.Context, urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput {
 	var res []entity.BatchShortURLOutput
 
 	for _, url := range urls {
-		shortURL, err := u.CreateShortURL(url.OriginalURL)
+		shortURL, err := u.CreateShortURL(ctx, url.OriginalURL)
 		if err != nil {
 			logger.Log.Info(err.Error())
 			continue

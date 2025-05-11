@@ -18,12 +18,14 @@ func TestPingOK(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	uc := mocks.NewMockAppUseCase(ctrl)
-	uc.EXPECT().PingDB().Return(nil)
 
 	r := chi.NewRouter()
 	h := handler{router: r, uc: uc}
 
 	request := httptest.NewRequest(http.MethodGet, "/ping", nil)
+
+	uc.EXPECT().PingDB(request.Context()).Return(nil)
+
 	w := httptest.NewRecorder()
 	h.PingDB()(w, request)
 
@@ -99,12 +101,12 @@ func TestPingErrors(t *testing.T) {
 			var err error
 			var body []byte
 
-			uc.EXPECT().PingDB().Return(tt.useCaseRes.err).AnyTimes()
-
 			r := chi.NewRouter()
 			h := handler{router: r, uc: uc}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, nil)
+			uc.EXPECT().PingDB(req.Context()).Return(tt.useCaseRes.err).AnyTimes()
+
 			w := httptest.NewRecorder()
 
 			h.PingDB()(w, req)

@@ -3,6 +3,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 )
@@ -16,7 +17,7 @@ type Router interface {
 }
 
 type AppUseCase interface {
-	PingDB() error
+	PingDB(ctx context.Context) error
 }
 
 type handler struct {
@@ -38,7 +39,7 @@ func (h *handler) PingDB() http.HandlerFunc {
 			return
 		}
 
-		err = h.uc.PingDB()
+		err = h.uc.PingDB(r.Context())
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)

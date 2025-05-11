@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
@@ -13,6 +14,7 @@ import (
 func TestFindShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
+	ctx := context.Background()
 
 	type daoRes struct {
 		shortURL *entity.ShortURL
@@ -38,11 +40,11 @@ func TestFindShortURL_OK(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().FindByAlias("alias1").Return(tt.daoRes.shortURL, nil).AnyTimes()
+		dao.EXPECT().FindByAlias(ctx, "alias1").Return(tt.daoRes.shortURL, nil).AnyTimes()
 		uc := NewShortURLUseCase(dao, "baseURL")
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := uc.FindShortURL(tt.alias)
+			res, err := uc.FindShortURL(ctx, tt.alias)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
@@ -52,6 +54,7 @@ func TestFindShortURL_OK(t *testing.T) {
 func TestFindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
+	ctx := context.Background()
 
 	type daoRes struct {
 		shortURL *entity.ShortURL
@@ -78,9 +81,9 @@ func TestFindShortURL_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dao.EXPECT().FindByAlias(tt.alias).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
+			dao.EXPECT().FindByAlias(ctx, tt.alias).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
 			uc := NewShortURLUseCase(dao, "base")
-			_, err := uc.FindShortURL(tt.alias)
+			_, err := uc.FindShortURL(ctx, tt.alias)
 			require.ErrorIs(t, tt.err, err)
 		})
 	}
@@ -89,6 +92,7 @@ func TestFindShortURL_Errors(t *testing.T) {
 func TestCreateShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
+	ctx := context.Background()
 
 	type daoRes struct {
 		shortURL *entity.ShortURL
@@ -110,11 +114,11 @@ func TestCreateShortURL_OK(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, nil)
+		dao.EXPECT().Save(ctx, tt.sourceURL).Return(tt.daoRes.shortURL, nil)
 		uc := NewShortURLUseCase(dao, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := uc.CreateShortURL(tt.sourceURL)
+			res, err := uc.CreateShortURL(ctx, tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
@@ -124,6 +128,7 @@ func TestCreateShortURL_OK(t *testing.T) {
 func TestCreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
+	ctx := context.Background()
 
 	type daoRes struct {
 		shortURL *entity.ShortURL
@@ -165,11 +170,11 @@ func TestCreateShortURL_Errors(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(tt.sourceURL).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
+		dao.EXPECT().Save(ctx, tt.sourceURL).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
 		uc := NewShortURLUseCase(dao, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := uc.CreateShortURL(tt.sourceURL)
+			_, err := uc.CreateShortURL(ctx, tt.sourceURL)
 			require.ErrorIs(t, tt.err, err)
 		})
 	}
@@ -178,6 +183,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 func TestBatchShortURLs_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	dao := mocks.NewMockDAO(ctrl)
+	ctx := context.Background()
 
 	var urls []entity.BatchShortURLInput
 	urls = append(urls,
@@ -185,8 +191,8 @@ func TestBatchShortURLs_OK(t *testing.T) {
 		entity.BatchShortURLInput{CorrelationID: "2", OriginalURL: "https://ya.com"},
 	)
 
-	dao.EXPECT().Save(urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
-	dao.EXPECT().Save(urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
+	dao.EXPECT().Save(ctx, urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
+	dao.EXPECT().Save(ctx, urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
 
 	tests := []struct {
 		name    string
@@ -208,7 +214,7 @@ func TestBatchShortURLs_OK(t *testing.T) {
 		uc := NewShortURLUseCase(dao, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res := uc.BatchShortURLs(tt.urls)
+			res := uc.BatchShortURLs(ctx, tt.urls)
 			require.Equal(t, tt.result, res)
 		})
 	}

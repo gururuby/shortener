@@ -2,6 +2,7 @@ package file
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -73,7 +74,7 @@ func toShortURL(dto *fileDTO) *entity.ShortURL {
 	}
 }
 
-func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+func (db *DB) Find(_ context.Context, alias string) (*entity.ShortURL, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 
@@ -86,7 +87,7 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+func (db *DB) findBySourceURL(_ context.Context, sourceURL string) (*entity.ShortURL, error) {
 	var (
 		shortURL  *entity.ShortURL
 		noRecords = true
@@ -110,12 +111,12 @@ func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *DB) Save(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var err error
 	var record *entity.ShortURL
 	var data []byte
 
-	if record, _ = db.findBySourceURL(shortURL.SourceURL); record != nil {
+	if record, _ = db.findBySourceURL(ctx, shortURL.SourceURL); record != nil {
 		return record, dbErrors.ErrDBIsNotUnique
 	}
 
@@ -136,14 +137,7 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Ping() error {
+func (db *DB) Ping(_ context.Context) error {
 	_, err := db.file.Stat()
 	return err
-}
-
-func (db *DB) Truncate() {
-	err := os.Truncate(db.file.Name(), 0)
-	if err != nil {
-		panic(err)
-	}
 }

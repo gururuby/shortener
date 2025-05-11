@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"context"
 	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	daoMock "github.com/gururuby/shortener/internal/domain/dao/mocks"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -15,6 +16,7 @@ func TestDAO_FindByAlias_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := daoMock.NewMockDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
+	ctx := context.Background()
 
 	dao := New(gen, db)
 
@@ -35,10 +37,10 @@ func TestDAO_FindByAlias_Ok(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Find(tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
+		db.EXPECT().Find(ctx, tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := dao.FindByAlias(tt.alias)
+			res, err := dao.FindByAlias(ctx, tt.alias)
 			require.NoError(t, err)
 			require.Equal(t, tt.dbRecord.value, res)
 		})
@@ -50,6 +52,7 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 	db := daoMock.NewMockDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
 	dao := New(gen, db)
+	ctx := context.Background()
 
 	type result struct {
 		value *entity.ShortURL
@@ -68,10 +71,10 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Find(tt.alias).Return(tt.result.value, tt.result.err).Times(1)
+		db.EXPECT().Find(ctx, tt.alias).Return(tt.result.value, tt.result.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := dao.FindByAlias(tt.alias)
+			_, err := dao.FindByAlias(ctx, tt.alias)
 			require.Error(t, tt.result.err, err)
 		})
 	}
@@ -80,6 +83,7 @@ func TestDAO_FindByAlias_Errors(t *testing.T) {
 func TestDAO_Save_Ok(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := daoMock.NewMockDB(ctrl)
+	ctx := context.Background()
 
 	gen := entityMock.NewMockGenerator(ctrl)
 	gen.EXPECT().UUID().Return("UUID")
@@ -104,8 +108,8 @@ func TestDAO_Save_Ok(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db.EXPECT().Save(tt.res).Return(tt.res, nil)
-			res, err := dao.Save(tt.sourceURL)
+			db.EXPECT().Save(ctx, tt.res).Return(tt.res, nil)
+			res, err := dao.Save(ctx, tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
@@ -115,19 +119,20 @@ func TestDAO_Save_Ok(t *testing.T) {
 func TestIsDBReady(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := daoMock.NewMockDB(ctrl)
+	ctx := context.Background()
 
 	gen := entityMock.NewMockGenerator(ctrl)
 	dao := New(gen, db)
 
 	t.Run("when DB ping is ok", func(t *testing.T) {
-		db.EXPECT().Ping().Return(nil)
-		err := dao.IsDBReady()
+		db.EXPECT().Ping(ctx).Return(nil)
+		err := dao.IsDBReady(ctx)
 		require.NoError(t, err)
 	})
 
 	t.Run("when DB ping is failed", func(t *testing.T) {
-		db.EXPECT().Ping().Return(dbErrors.ErrDBIsNotHealthy)
-		err := dao.IsDBReady()
+		db.EXPECT().Ping(ctx).Return(dbErrors.ErrDBIsNotHealthy)
+		err := dao.IsDBReady(ctx)
 		require.Error(t, daoErrors.ErrDAOIsNotReadyDB, err)
 	})
 }

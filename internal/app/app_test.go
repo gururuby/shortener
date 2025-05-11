@@ -3,6 +3,9 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"fmt"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/gururuby/shortener/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,6 +45,7 @@ type (
 
 func TestAppOkRequests(t *testing.T) {
 	cfg, err := config.New()
+	ctx := context.Background()
 	require.NoError(t, err)
 
 	app := New(cfg).Setup()
@@ -49,8 +53,7 @@ func TestAppOkRequests(t *testing.T) {
 	defer ts.Close()
 
 	sourceURL := "https://ya.ru"
-	app.Storage.Clear()
-	existingRecord, _ := app.Storage.Save(sourceURL)
+	existingRecord, _ := app.Storage.Save(ctx, sourceURL)
 
 	var tests = []struct {
 		name     string
@@ -61,7 +64,7 @@ func TestAppOkRequests(t *testing.T) {
 		{
 			name: "when create ShortURL via http",
 			request: request{
-				body:    []byte("https://ya1.ru"),
+				body:    []byte(gofakeit.URL()),
 				headers: headers{contentType: "text/plain; charset=utf-8"},
 				method:  http.MethodPost,
 				path:    "/",
@@ -75,7 +78,7 @@ func TestAppOkRequests(t *testing.T) {
 		{
 			name: "when create via API",
 			request: request{
-				body:    []byte(`{"url":"https://ya2.ru"}`),
+				body:    []byte(fmt.Sprintf(`{"url":"%s"}`, gofakeit.URL())),
 				headers: headers{contentType: "application/json"},
 				method:  http.MethodPost,
 				path:    "/api/shorten",
@@ -103,7 +106,7 @@ func TestAppOkRequests(t *testing.T) {
 		{
 			name: "when batch creating via API",
 			request: request{
-				body:    []byte(`[{"correlation_id":"1","original_url":"https://ya3.ru"},{"correlation_id":"2","original_url":"https://ya4.ru"}]`),
+				body:    []byte(fmt.Sprintf(`[{"correlation_id":"1","original_url":"%s"},{"correlation_id":"2","original_url":"%s"}]`, gofakeit.URL(), gofakeit.URL())),
 				headers: headers{contentType: "application/json"},
 				method:  http.MethodPost,
 				path:    "/api/shorten/batch",
@@ -149,7 +152,6 @@ func TestAppCompressRequests(t *testing.T) {
 	require.NoError(t, err)
 
 	app := New(cfg).Setup()
-	app.Storage.Clear()
 
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
@@ -163,7 +165,7 @@ func TestAppCompressRequests(t *testing.T) {
 		{
 			name: "when send gzipped text/html",
 			request: compressedRequest{
-				body: zippify(t, "https://ya6.ru"),
+				body: zippify(t, gofakeit.URL()),
 				headers: headers{
 					contentType:     "text/html",
 					contentEncoding: "gzip",
@@ -185,7 +187,7 @@ func TestAppCompressRequests(t *testing.T) {
 		{
 			name: "when content type is a application/json",
 			request: compressedRequest{
-				body: zippify(t, `{"url":"https://ya7.ru"}`),
+				body: zippify(t, fmt.Sprintf(`{"url":"%s"}`, gofakeit.URL())),
 				headers: headers{
 					contentType:     "application/json",
 					contentEncoding: "gzip",
@@ -239,7 +241,6 @@ func TestAppErrorRequests(t *testing.T) {
 	require.NoError(t, err)
 
 	app := New(cfg).Setup()
-	app.Storage.Clear()
 
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()

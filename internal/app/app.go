@@ -24,17 +24,15 @@ import (
 )
 
 type DAO interface {
-	FindByAlias(alias string) (*entity.ShortURL, error)
-	Save(sourceURL string) (*entity.ShortURL, error)
-	IsDBReady() error
-	Clear()
+	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
+	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
+	IsDBReady(ctx context.Context) error
 }
 
 type DB interface {
-	Find(string) (*entity.ShortURL, error)
-	Save(*entity.ShortURL) (*entity.ShortURL, error)
-	Ping() error
-	Truncate()
+	Find(context.Context, string) (*entity.ShortURL, error)
+	Save(context.Context, *entity.ShortURL) (*entity.ShortURL, error)
+	Ping(context.Context) error
 }
 
 type Router interface {

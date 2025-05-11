@@ -3,6 +3,7 @@
 package dao
 
 import (
+	"context"
 	"errors"
 	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -10,10 +11,9 @@ import (
 )
 
 type DB interface {
-	Find(string) (*entity.ShortURL, error)
-	Save(*entity.ShortURL) (*entity.ShortURL, error)
-	Ping() error
-	Truncate()
+	Find(context.Context, string) (*entity.ShortURL, error)
+	Save(context.Context, *entity.ShortURL) (*entity.ShortURL, error)
+	Ping(context.Context) error
 }
 
 type Generator interface {
@@ -35,13 +35,13 @@ func New(gen Generator, db DB) *DAO {
 	return dao
 }
 
-func (dao *DAO) FindByAlias(alias string) (*entity.ShortURL, error) {
-	return dao.db.Find(alias)
+func (dao *DAO) FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error) {
+	return dao.db.Find(ctx, alias)
 }
 
-func (dao *DAO) Save(sourceURL string) (*entity.ShortURL, error) {
+func (dao *DAO) Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
 	shortURL := entity.NewShortURL(dao.gen, sourceURL)
-	res, err := dao.db.Save(shortURL)
+	res, err := dao.db.Save(ctx, shortURL)
 	if err != nil {
 		if errors.Is(err, dbErrors.ErrDBIsNotUnique) {
 			return res, daoErrors.ErrDAORecordIsNotUnique
@@ -50,10 +50,6 @@ func (dao *DAO) Save(sourceURL string) (*entity.ShortURL, error) {
 	return res, err
 }
 
-func (dao *DAO) IsDBReady() error {
-	return dao.db.Ping()
-}
-
-func (dao *DAO) Clear() {
-	dao.db.Truncate()
+func (dao *DAO) IsDBReady(ctx context.Context) error {
+	return dao.db.Ping(ctx)
 }
