@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/app"
+	"github.com/gururuby/shortener/internal/config"
 	"log"
 )
 

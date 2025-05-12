@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	entity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
@@ -40,58 +41,46 @@ func (m *MockDB) EXPECT() *MockDBMockRecorder {
 	return m.recorder
 }
 
-// Find mocks base method.
-func (m *MockDB) Find(arg0 string) (*entity.ShortURL, error) {
+// FindShortURL mocks base method.
+func (m *MockDB) FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Find", arg0)
+	ret := m.ctrl.Call(m, "FindShortURL", ctx, alias)
 	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Find indicates an expected call of Find.
-func (mr *MockDBMockRecorder) Find(arg0 any) *gomock.Call {
+// FindShortURL indicates an expected call of FindShortURL.
+func (mr *MockDBMockRecorder) FindShortURL(ctx, alias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockDB)(nil).Find), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindShortURL", reflect.TypeOf((*MockDB)(nil).FindShortURL), ctx, alias)
 }
 
 // Ping mocks base method.
-func (m *MockDB) Ping() error {
+func (m *MockDB) Ping(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping")
+	ret := m.ctrl.Call(m, "Ping", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockDBMockRecorder) Ping() *gomock.Call {
+func (mr *MockDBMockRecorder) Ping(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDB)(nil).Ping))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDB)(nil).Ping), ctx)
 }
 
-// Save mocks base method.
-func (m *MockDB) Save(arg0 *entity.ShortURL) (*entity.ShortURL, error) {
+// SaveShortURL mocks base method.
+func (m *MockDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Save", arg0)
+	ret := m.ctrl.Call(m, "SaveShortURL", ctx, shortURL)
 	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Save indicates an expected call of Save.
-func (mr *MockDBMockRecorder) Save(arg0 any) *gomock.Call {
+// SaveShortURL indicates an expected call of SaveShortURL.
+func (mr *MockDBMockRecorder) SaveShortURL(ctx, shortURL any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockDB)(nil).Save), arg0)
-}
-
-// Truncate mocks base method.
-func (m *MockDB) Truncate() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Truncate")
-}
-
-// Truncate indicates an expected call of Truncate.
-func (mr *MockDBMockRecorder) Truncate() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Truncate", reflect.TypeOf((*MockDB)(nil).Truncate))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveShortURL", reflect.TypeOf((*MockDB)(nil).SaveShortURL), ctx, shortURL)
 }

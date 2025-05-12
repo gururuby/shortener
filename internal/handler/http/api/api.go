@@ -25,9 +25,9 @@ type Router interface {
 }
 
 type ShortURLUseCase interface {
-	CreateShortURL(sourceURL string) (string, error)
-	FindShortURL(alias string) (string, error)
-	BatchShortURLs([]entity.BatchShortURLInput) []entity.BatchShortURLOutput
+	CreateShortURL(ctx context.Context, sourceURL string) (string, error)
+	FindShortURL(ctx context.Context, alias string) (string, error)
+	BatchShortURLs(ctx context.Context, urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput
 }
 
 type handler struct {
@@ -65,9 +65,6 @@ func Register(router Router, uc ShortURLUseCase) {
 func (h *handler) CreateShortURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
-			ctx    = r.Context()
-			cancel context.CancelFunc
-
 			err        error
 			statusCode = http.StatusCreated
 			shortURL   string
@@ -76,7 +73,7 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			errRes     errorResponse
 		)
 
-		_, cancel = context.WithTimeout(ctx, createShortURLTimeout)
+		ctx, cancel := context.WithTimeout(r.Context(), createShortURLTimeout)
 		defer cancel()
 
 		w.Header().Set("Content-Type", "application/json")
@@ -95,7 +92,7 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			return
 		}
 
-		shortURL, err = h.uc.CreateShortURL(dto.request.URL)
+		shortURL, err = h.uc.CreateShortURL(ctx, dto.request.URL)
 
 		if err != nil {
 			if errors.Is(err, ucErrors.ErrShortURLAlreadyExist) {
@@ -130,16 +127,13 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 func (h *handler) BatchShortURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
-			ctx    = r.Context()
-			cancel context.CancelFunc
-
 			err      error
 			response []byte
 			dto      batchShortURLsDTO
 			errRes   errorResponse
 		)
 
-		_, cancel = context.WithTimeout(ctx, batchShortURLsTimeout)
+		ctx, cancel := context.WithTimeout(r.Context(), batchShortURLsTimeout)
 		defer cancel()
 
 		w.Header().Set("Content-Type", "application/json")
@@ -165,7 +159,7 @@ func (h *handler) BatchShortURLs() http.HandlerFunc {
 			return
 		}
 
-		dto.outputURLs = h.uc.BatchShortURLs(dto.inputURLs)
+		dto.outputURLs = h.uc.BatchShortURLs(ctx, dto.inputURLs)
 		response, err = json.Marshal(dto.outputURLs)
 
 		if err != nil {

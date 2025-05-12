@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestNewShortURLOk(t *testing.T) {
+func Test_NewShortURL_OK(t *testing.T) {
 	t.Run("create valid short URL entity", func(t *testing.T) {
 		sourceURL := "https://ya.ru"
 		ctrl := gomock.NewController(t)

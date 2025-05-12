@@ -33,7 +33,7 @@ type (
 	}
 )
 
-func TestCreateShortURL_OK(t *testing.T) {
+func Test_CreateShortURL_OK(t *testing.T) {
 	var err error
 	var body []byte
 
@@ -74,7 +74,7 @@ func TestCreateShortURL_OK(t *testing.T) {
 			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
 			req.Header.Set("Content-Type", tt.request.contentType)
 			w := httptest.NewRecorder()
-			uc.EXPECT().CreateShortURL(tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
+			uc.EXPECT().CreateShortURL(gomock.Any(), tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
 			h.CreateShortURL()(w, req)
 
 			resp := w.Result()
@@ -93,7 +93,7 @@ func TestCreateShortURL_OK(t *testing.T) {
 	}
 }
 
-func TestCreateShortURL_Errors(t *testing.T) {
+func Test_CreateShortURL_Errors(t *testing.T) {
 	var err error
 	var body []byte
 
@@ -180,7 +180,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			req.Header.Set("Content-Type", tt.request.contentType)
 			w := httptest.NewRecorder()
 			if tt.ucInput != "" {
-				uc.EXPECT().CreateShortURL(tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
+				uc.EXPECT().CreateShortURL(gomock.Any(), tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
 			}
 			h.CreateShortURL()(w, req)
 
@@ -200,7 +200,7 @@ func TestCreateShortURL_Errors(t *testing.T) {
 	}
 }
 
-func TestBatchShortURLs_Errors(t *testing.T) {
+func Test_BatchShortURLs_Errors(t *testing.T) {
 	var err error
 	var body []byte
 

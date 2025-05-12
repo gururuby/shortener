@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	entity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
@@ -41,31 +42,31 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // FindByAlias mocks base method.
-func (m *MockStorage) FindByAlias(alias string) (*entity.ShortURL, error) {
+func (m *MockStorage) FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindByAlias", alias)
+	ret := m.ctrl.Call(m, "FindByAlias", ctx, alias)
 	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FindByAlias indicates an expected call of FindByAlias.
-func (mr *MockStorageMockRecorder) FindByAlias(alias any) *gomock.Call {
+func (mr *MockStorageMockRecorder) FindByAlias(ctx, alias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByAlias", reflect.TypeOf((*MockStorage)(nil).FindByAlias), alias)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByAlias", reflect.TypeOf((*MockStorage)(nil).FindByAlias), ctx, alias)
 }
 
 // Save mocks base method.
-func (m *MockStorage) Save(sourceURL string) (*entity.ShortURL, error) {
+func (m *MockStorage) Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Save", sourceURL)
+	ret := m.ctrl.Call(m, "Save", ctx, sourceURL)
 	ret0, _ := ret[0].(*entity.ShortURL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Save indicates an expected call of Save.
-func (mr *MockStorageMockRecorder) Save(sourceURL any) *gomock.Call {
+func (mr *MockStorageMockRecorder) Save(ctx, sourceURL any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockStorage)(nil).Save), sourceURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockStorage)(nil).Save), ctx, sourceURL)
 }

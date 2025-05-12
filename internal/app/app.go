@@ -3,26 +3,25 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/gururuby/shortener/config"
+	"github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
-	"github.com/gururuby/shortener/internal/domain/storage/shorturl"
+	shortURLStorage "github.com/gururuby/shortener/internal/domain/storage/shorturl"
 	appUseCase "github.com/gururuby/shortener/internal/domain/usecase/app"
 	shortURLUseCase "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
 	apiHandler "github.com/gururuby/shortener/internal/handler/http/api"
 	appHandler "github.com/gururuby/shortener/internal/handler/http/app"
 	shortURLHandler "github.com/gururuby/shortener/internal/handler/http/shorturl"
+	database "github.com/gururuby/shortener/internal/infra/db"
 	"github.com/gururuby/shortener/internal/infra/logger"
-	"github.com/gururuby/shortener/internal/middleware"
+	"github.com/gururuby/shortener/internal/infra/router"
 	"log"
 	"net/http"
 )
 
 type Storage interface {
-	FindByAlias(alias string) (*entity.ShortURL, error)
-	Save(sourceURL string) (*entity.ShortURL, error)
-	IsDBReady() error
-	Clear()
+	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
+	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
+	IsDBReady(ctx context.Context) error
 }
 
 type Router interface {
@@ -41,31 +40,31 @@ func New(cfg *config.Config) *App {
 
 func (a *App) Setup() *App {
 	var setupErr error
-	var stg Storage
+	var shortURLStg Storage
+	var db database.DB
 
 	ctx := context.Background()
 
-	logger.Initialize(a.Config.App.Env, a.Config.Log.Level)
+	logger.Setup(a.Config.App.Env, a.Config.Log.Level)
 
-	stg, setupErr = storage.Setup(ctx, a.Config)
-
+	db, setupErr = database.Setup(ctx, a.Config)
 	if setupErr != nil {
-		log.Fatalf("cannot setup storage: %s", setupErr)
+		log.Fatalf("cannot setup database: %s", setupErr)
 	}
 
-	router := chi.NewRouter()
-	router.Use(middleware.Logging)
-	router.Use(middleware.Compression)
+	shortURLStg = shortURLStorage.Setup(db, a.Config)
 
-	shortURLUC := shortURLUseCase.NewShortURLUseCase(stg, a.Config.App.BaseURL)
-	appUC := appUseCase.NewAppUseCase(stg)
+	r := router.Setup()
 
-	shortURLHandler.Register(router, shortURLUC)
-	appHandler.Register(router, appUC)
-	apiHandler.Register(router, shortURLUC)
+	shortURLUC := shortURLUseCase.NewShortURLUseCase(shortURLStg, a.Config.App.BaseURL)
+	appUC := appUseCase.NewAppUseCase(shortURLStg)
 
-	a.Storage = stg
-	a.Router = router
+	shortURLHandler.Register(r, shortURLUC)
+	appHandler.Register(r, appUC)
+	apiHandler.Register(r, shortURLUC)
+
+	a.Storage = shortURLStg
+	a.Router = r
 
 	return a
 }

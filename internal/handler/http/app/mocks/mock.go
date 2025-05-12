@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -40,15 +41,15 @@ func (m *MockAppUseCase) EXPECT() *MockAppUseCaseMockRecorder {
 }
 
 // PingDB mocks base method.
-func (m *MockAppUseCase) PingDB() error {
+func (m *MockAppUseCase) PingDB(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PingDB")
+	ret := m.ctrl.Call(m, "PingDB", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // PingDB indicates an expected call of PingDB.
-func (mr *MockAppUseCaseMockRecorder) PingDB() *gomock.Call {
+func (mr *MockAppUseCaseMockRecorder) PingDB(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingDB", reflect.TypeOf((*MockAppUseCase)(nil).PingDB))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingDB", reflect.TypeOf((*MockAppUseCase)(nil).PingDB), ctx)
 }

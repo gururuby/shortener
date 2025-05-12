@@ -1,21 +1,22 @@
-package memory
+package db
 
 import (
+	"context"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
 
-type DB struct {
+type MemoryDB struct {
 	shortURLs map[string]*entity.ShortURL
 }
 
-func New() *DB {
-	return &DB{
+func New() *MemoryDB {
+	return &MemoryDB{
 		shortURLs: make(map[string]*entity.ShortURL),
 	}
 }
 
-func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+func (db *MemoryDB) FindShortURL(_ context.Context, alias string) (*entity.ShortURL, error) {
 	shortURL, ok := db.shortURLs[alias]
 	if !ok {
 		return nil, dbErrors.ErrDBRecordNotFound
@@ -24,7 +25,7 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+func (db *MemoryDB) findBySourceURL(_ context.Context, sourceURL string) (*entity.ShortURL, error) {
 	var (
 		shortURL  *entity.ShortURL
 		noRecords = true
@@ -45,8 +46,8 @@ func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
-	existRecord, _ := db.findBySourceURL(shortURL.SourceURL)
+func (db *MemoryDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+	existRecord, _ := db.findBySourceURL(ctx, shortURL.SourceURL)
 	if existRecord != nil {
 		return existRecord, dbErrors.ErrDBIsNotUnique
 	}
@@ -55,10 +56,6 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Ping() error {
+func (db *MemoryDB) Ping(_ context.Context) error {
 	return nil
-}
-
-func (db *DB) Truncate() {
-	db.shortURLs = make(map[string]*entity.ShortURL)
 }

@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -40,15 +41,15 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // IsDBReady mocks base method.
-func (m *MockStorage) IsDBReady() error {
+func (m *MockStorage) IsDBReady(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsDBReady")
+	ret := m.ctrl.Call(m, "IsDBReady", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // IsDBReady indicates an expected call of IsDBReady.
-func (mr *MockStorageMockRecorder) IsDBReady() *gomock.Call {
+func (mr *MockStorageMockRecorder) IsDBReady(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDBReady", reflect.TypeOf((*MockStorage)(nil).IsDBReady))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsDBReady", reflect.TypeOf((*MockStorage)(nil).IsDBReady), ctx)
 }

@@ -1,16 +1,16 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DBPool
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . PGDBPool
 
-package postgresql
+package db
 
 import (
 	"context"
 	"embed"
 	"errors"
-	"github.com/gururuby/shortener/config"
+	"github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
-	"github.com/gururuby/shortener/internal/infra/utils/retry"
+	"github.com/gururuby/shortener/pkg/retry"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -23,25 +23,23 @@ import (
 var migrations embed.FS
 
 const (
-	findQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1 LIMIT 1`
-	findBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1 LIMIT 1`
+	findQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1`
+	findBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
 	saveQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
-	truncateQuery        = `TRUNCATE TABLE urls`
 )
 
-type DBPool interface {
+type PGDBPool interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Ping(ctx context.Context) error
 }
 
-type DB struct {
-	ctx  context.Context
-	pool DBPool
+type PGDB struct {
+	pool PGDBPool
 }
 
-func New(ctx context.Context, cfg *config.Config) (*DB, error) {
+func New(ctx context.Context, cfg *config.Config) (*PGDB, error) {
 	var err error
 	var pool *pgxpool.Pool
 
@@ -64,8 +62,7 @@ func New(ctx context.Context, cfg *config.Config) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{
-		ctx:  ctx,
+	return &PGDB{
 		pool: pool,
 	}, nil
 }
@@ -93,9 +90,9 @@ func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) 
 	return pool, err
 }
 
-func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error) {
 	shortURL := entity.ShortURL{Alias: alias}
-	err := db.pool.QueryRow(db.ctx, findQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
+	err := db.pool.QueryRow(ctx, findQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
 
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -105,49 +102,52 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return &shortURL, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var (
-		err   error
-		pgErr *pgconn.PgError
+		err              error
+		pgErr            *pgconn.PgError
+		existingShortURL *entity.ShortURL
 	)
 
-	_, err = db.pool.Exec(db.ctx, saveQuery, shortURL.Alias, shortURL.SourceURL)
+	if existingShortURL, err = db.findBySourceURL(ctx, shortURL.SourceURL); err == nil {
+		return existingShortURL, dbErrors.ErrDBIsNotUnique
+	}
 
-	if err != nil {
+	logger.Log.Error(err.Error())
+	if errors.Is(err, dbErrors.ErrDBRecordNotFound) {
+		if _, err = db.pool.Exec(ctx, saveQuery, shortURL.Alias, shortURL.SourceURL); err == nil {
+			return shortURL, nil
+		}
+
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == pgerrcode.UniqueViolation {
-				shortURL, err = db.findBySourceURL(shortURL.SourceURL)
-				if err != nil {
-					return nil, err
-				}
 				return shortURL, dbErrors.ErrDBIsNotUnique
 			}
+			logger.Log.Error(err.Error())
 			return nil, dbErrors.ErrDBQuery
 		}
 	}
 
-	return shortURL, nil
+	return nil, err
 }
 
-func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+func (db *PGDB) findBySourceURL(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
 	shortURL := entity.ShortURL{SourceURL: sourceURL}
-	err := db.pool.QueryRow(db.ctx, findBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
+	err := db.pool.QueryRow(ctx, findBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
 
 	if err != nil {
-		logger.Log.Error(err.Error())
-		return nil, dbErrors.ErrDBRecordNotFound
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, dbErrors.ErrDBRecordNotFound
+		} else {
+			logger.Log.Error(err.Error())
+			return nil, dbErrors.ErrDBQuery
+		}
+
 	}
 
 	return &shortURL, nil
 }
 
-func (db *DB) Ping() error {
-	return db.pool.Ping(context.Background())
-}
-
-func (db *DB) Truncate() {
-	_, err := db.pool.Exec(db.ctx, truncateQuery)
-	if err != nil {
-		logger.Log.Error(err.Error())
-	}
+func (db *PGDB) Ping(ctx context.Context) error {
+	return db.pool.Ping(ctx)
 }

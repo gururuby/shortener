@@ -1,7 +1,8 @@
-package file
+package db
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
@@ -10,7 +11,7 @@ import (
 	"sync"
 )
 
-type DB struct {
+type FileDB struct {
 	mutex     sync.RWMutex
 	file      *os.File
 	shortURLs map[string]*entity.ShortURL
@@ -22,7 +23,7 @@ type fileDTO struct {
 	OriginalURL string `json:"original_url"`
 }
 
-func New(filePath string) (*DB, error) {
+func New(filePath string) (*FileDB, error) {
 	var shortURLs = make(map[string]*entity.ShortURL)
 
 	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -35,7 +36,7 @@ func New(filePath string) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{
+	return &FileDB{
 		file:      f,
 		shortURLs: shortURLs,
 	}, nil
@@ -73,7 +74,7 @@ func toShortURL(dto *fileDTO) *entity.ShortURL {
 	}
 }
 
-func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+func (db *FileDB) FindShortURL(_ context.Context, alias string) (*entity.ShortURL, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 
@@ -86,7 +87,7 @@ func (db *DB) Find(alias string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
+func (db *FileDB) findBySourceURL(_ context.Context, sourceURL string) (*entity.ShortURL, error) {
 	var (
 		shortURL  *entity.ShortURL
 		noRecords = true
@@ -110,12 +111,12 @@ func (db *DB) findBySourceURL(sourceURL string) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *FileDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var err error
 	var record *entity.ShortURL
 	var data []byte
 
-	if record, _ = db.findBySourceURL(shortURL.SourceURL); record != nil {
+	if record, _ = db.findBySourceURL(ctx, shortURL.SourceURL); record != nil {
 		return record, dbErrors.ErrDBIsNotUnique
 	}
 
@@ -136,14 +137,7 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Ping() error {
+func (db *FileDB) Ping(_ context.Context) error {
 	_, err := db.file.Stat()
 	return err
-}
-
-func (db *DB) Truncate() {
-	err := os.Truncate(db.file.Name(), 0)
-	if err != nil {
-		panic(err)
-	}
 }

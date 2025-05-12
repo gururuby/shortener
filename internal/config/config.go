@@ -4,12 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
 	"time"
 )
 
 type (
 	Config struct {
 		App
+		Auth
 		Server
 		Database
 		FileStorage
@@ -22,6 +26,10 @@ type (
 		Name        string `env:"APP_NAME" envDefault:"Shortener"`
 		Version     string `env:"APP_VERSION" envDefault:"0.0.1"`
 		BaseURL     string `env:"APP_BASE_URL"`
+	}
+
+	Auth struct {
+		SecretKey string `env:"AUTH_SECRET_KEY" envDefault:"secret"`
 	}
 
 	Server struct {
@@ -47,7 +55,16 @@ type (
 var cfg Config
 
 func New() (*Config, error) {
-	if err := env.Parse(&cfg); err != nil {
+	var err error
+
+	if _, err = os.Stat("../.env"); err == nil {
+		err = godotenv.Load("../.env")
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
+
+	if err = env.Parse(&cfg); err != nil {
 		return nil, fmt.Errorf("config error: %v", err)
 	}
 

@@ -1,9 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE users (
-    uuid uuid DEFAULT gen_random_uuid() PRIMARY KEY
-                   );
-
+CREATE TABLE users (id SERIAL PRIMARY KEY);
 -- +goose StatementEnd
 
 -- +goose Down

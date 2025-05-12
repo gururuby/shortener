@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	entityMock "github.com/gururuby/shortener/internal/domain/entity/shorturl/mocks"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
@@ -11,12 +12,13 @@ import (
 	"testing"
 )
 
-func TestStorage_FindByAlias_Ok(t *testing.T) {
+func Test_Storage_FindByAlias_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := storageMock.NewMockDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
+	ctx := context.Background()
 
-	storage := New(gen, db)
+	storage := Storage{gen: gen, db: db}
 
 	type dbRecord struct {
 		value *entity.ShortURL
@@ -35,21 +37,23 @@ func TestStorage_FindByAlias_Ok(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Find(tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
+		db.EXPECT().FindShortURL(ctx, tt.alias).Return(tt.dbRecord.value, tt.dbRecord.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := storage.FindByAlias(tt.alias)
+			res, err := storage.FindByAlias(ctx, tt.alias)
 			require.NoError(t, err)
 			require.Equal(t, tt.dbRecord.value, res)
 		})
 	}
 }
 
-func TestStorage_FindByAlias_Errors(t *testing.T) {
+func Test_Storage_FindByAlias_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := storageMock.NewMockDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
-	storage := New(gen, db)
+	ctx := context.Background()
+
+	storage := Storage{gen: gen, db: db}
 
 	type result struct {
 		value *entity.ShortURL
@@ -68,24 +72,25 @@ func TestStorage_FindByAlias_Errors(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		db.EXPECT().Find(tt.alias).Return(tt.result.value, tt.result.err).Times(1)
+		db.EXPECT().FindShortURL(ctx, tt.alias).Return(tt.result.value, tt.result.err).Times(1)
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := storage.FindByAlias(tt.alias)
+			_, err := storage.FindByAlias(ctx, tt.alias)
 			require.Error(t, tt.result.err, err)
 		})
 	}
 }
 
-func TestStorage_Save_Ok(t *testing.T) {
+func Test_Storage_Save_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := storageMock.NewMockDB(ctrl)
+	ctx := context.Background()
 
 	gen := entityMock.NewMockGenerator(ctrl)
 	gen.EXPECT().UUID().Return("UUID")
 	gen.EXPECT().Alias().Return("alias")
 
-	storage := New(gen, db)
+	storage := Storage{gen: gen, db: db}
 
 	tests := []struct {
 		name      string
@@ -104,30 +109,31 @@ func TestStorage_Save_Ok(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db.EXPECT().Save(tt.res).Return(tt.res, nil)
-			res, err := storage.Save(tt.sourceURL)
+			db.EXPECT().SaveShortURL(ctx, tt.res).Return(tt.res, nil)
+			res, err := storage.Save(ctx, tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
 }
 
-func TestIsDBReady(t *testing.T) {
+func Test_IsDBReady(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	db := storageMock.NewMockDB(ctrl)
-
 	gen := entityMock.NewMockGenerator(ctrl)
-	storage := New(gen, db)
+	ctx := context.Background()
+
+	storage := Storage{gen: gen, db: db}
 
 	t.Run("when DB ping is ok", func(t *testing.T) {
-		db.EXPECT().Ping().Return(nil)
-		err := storage.IsDBReady()
+		db.EXPECT().Ping(ctx).Return(nil)
+		err := storage.IsDBReady(ctx)
 		require.NoError(t, err)
 	})
 
 	t.Run("when DB ping is failed", func(t *testing.T) {
-		db.EXPECT().Ping().Return(dbErrors.ErrDBIsNotHealthy)
-		err := storage.IsDBReady()
+		db.EXPECT().Ping(ctx).Return(dbErrors.ErrDBIsNotHealthy)
+		err := storage.IsDBReady(ctx)
 		require.Error(t, storageErrors.ErrStorageIsNotReadyDB, err)
 	})
 }

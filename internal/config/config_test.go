@@ -22,6 +22,9 @@ func TestConfig(t *testing.T) {
 					Version:     "0.0.1",
 					BaseURL:     "http://localhost:8080",
 				},
+				Auth: Auth{
+					SecretKey: "secret",
+				},
 				Server: Server{
 					Address: "localhost:8080",
 				},

@@ -8,7 +8,7 @@ import (
 
 var Log *zap.Logger
 
-func Initialize(appENV, logLevel string) {
+func Setup(appENV, logLevel string) {
 	var initLogger sync.Once
 
 	initLogger.Do(func() {

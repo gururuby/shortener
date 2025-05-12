@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
@@ -10,9 +11,10 @@ import (
 	"testing"
 )
 
-func TestFindShortURL_OK(t *testing.T) {
+func Test_FindShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
 
 	type storageRes struct {
 		shortURL *entity.ShortURL
@@ -38,20 +40,21 @@ func TestFindShortURL_OK(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		storage.EXPECT().FindByAlias("alias1").Return(tt.storageRes.shortURL, nil).AnyTimes()
+		storage.EXPECT().FindByAlias(ctx, "alias1").Return(tt.storageRes.shortURL, nil).AnyTimes()
 		uc := NewShortURLUseCase(storage, "baseURL")
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := uc.FindShortURL(tt.alias)
+			res, err := uc.FindShortURL(ctx, tt.alias)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
 }
 
-func TestFindShortURL_Errors(t *testing.T) {
+func Test_FindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
 
 	type storageRes struct {
 		shortURL *entity.ShortURL
@@ -78,17 +81,18 @@ func TestFindShortURL_Errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage.EXPECT().FindByAlias(tt.alias).Return(tt.storageRes.shortURL, tt.storageRes.err).AnyTimes()
+			storage.EXPECT().FindByAlias(ctx, tt.alias).Return(tt.storageRes.shortURL, tt.storageRes.err).AnyTimes()
 			uc := NewShortURLUseCase(storage, "base")
-			_, err := uc.FindShortURL(tt.alias)
+			_, err := uc.FindShortURL(ctx, tt.alias)
 			require.ErrorIs(t, tt.err, err)
 		})
 	}
 }
 
-func TestCreateShortURL_OK(t *testing.T) {
+func Test_CreateShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
 
 	type storageRes struct {
 		shortURL *entity.ShortURL
@@ -110,20 +114,21 @@ func TestCreateShortURL_OK(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		storage.EXPECT().Save(tt.sourceURL).Return(tt.storageRes.shortURL, nil)
+		storage.EXPECT().Save(ctx, tt.sourceURL).Return(tt.storageRes.shortURL, nil)
 		uc := NewShortURLUseCase(storage, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := uc.CreateShortURL(tt.sourceURL)
+			res, err := uc.CreateShortURL(ctx, tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
 }
 
-func TestCreateShortURL_Errors(t *testing.T) {
+func Test_CreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
 
 	type storageRes struct {
 		shortURL *entity.ShortURL
@@ -165,19 +170,20 @@ func TestCreateShortURL_Errors(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		storage.EXPECT().Save(tt.sourceURL).Return(tt.storageRes.shortURL, tt.storageRes.err).AnyTimes()
+		storage.EXPECT().Save(ctx, tt.sourceURL).Return(tt.storageRes.shortURL, tt.storageRes.err).AnyTimes()
 		uc := NewShortURLUseCase(storage, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := uc.CreateShortURL(tt.sourceURL)
+			_, err := uc.CreateShortURL(ctx, tt.sourceURL)
 			require.ErrorIs(t, tt.err, err)
 		})
 	}
 }
 
-func TestBatchShortURLs_OK(t *testing.T) {
+func Test_BatchShortURLs_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockStorage(ctrl)
+	ctx := context.Background()
 
 	var urls []entity.BatchShortURLInput
 	urls = append(urls,
@@ -185,8 +191,8 @@ func TestBatchShortURLs_OK(t *testing.T) {
 		entity.BatchShortURLInput{CorrelationID: "2", OriginalURL: "https://ya.com"},
 	)
 
-	storage.EXPECT().Save(urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
-	storage.EXPECT().Save(urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
+	storage.EXPECT().Save(ctx, urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
+	storage.EXPECT().Save(ctx, urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
 
 	tests := []struct {
 		name    string
@@ -208,7 +214,7 @@ func TestBatchShortURLs_OK(t *testing.T) {
 		uc := NewShortURLUseCase(storage, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res := uc.BatchShortURLs(tt.urls)
+			res := uc.BatchShortURLs(ctx, tt.urls)
 			require.Equal(t, tt.result, res)
 		})
 	}

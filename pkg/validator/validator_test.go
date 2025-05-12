@@ -2,7 +2,7 @@ package validator
 
 import "testing"
 
-func TestIsInvalidURL(t *testing.T) {
+func Test_IsInvalidURL(t *testing.T) {
 	tests := []struct {
 		name   string
 		rawURL string

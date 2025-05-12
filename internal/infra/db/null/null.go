@@ -1,30 +1,28 @@
-package null
+package db
 
 import (
+	"context"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 )
 
-type DB struct{}
+type NullDB struct{}
 
-func New() *DB {
-	return &DB{}
+func New() *NullDB {
+	return &NullDB{}
 }
 
-func (db *DB) Find(_ string) (*entity.ShortURL, error) {
+func (db *NullDB) FindShortURL(_ context.Context, _ string) (*entity.ShortURL, error) {
 	return nil, nil
 }
 
-func (db *DB) findBySourceURL(_ string) (*entity.ShortURL, error) {
+func (db *NullDB) findBySourceURL(_ context.Context, _ string) (*entity.ShortURL, error) {
 	return nil, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *NullDB) SaveShortURL(_ context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	return shortURL, nil
 }
 
-func (db *DB) Ping() error {
+func (db *NullDB) Ping(_ context.Context) error {
 	return nil
-}
-
-func (db *DB) Truncate() {
 }
