@@ -1,9 +1,13 @@
-//go:generate mockgen -destination=./mock_handler/mock.go . UseCase
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . ShortURLUseCase
 
 package handler
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"github.com/gururuby/shortener/internal/domain/entity"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
 	"io"
 	"net/http"
 )
@@ -18,17 +22,18 @@ type Router interface {
 	Get(path string, h http.HandlerFunc)
 }
 
-type UseCase interface {
-	CreateShortURL(sourceURL string) (string, error)
-	FindShortURL(alias string) (string, error)
+type ShortURLUseCase interface {
+	CreateShortURL(ctx context.Context, sourceURL string) (string, error)
+	FindShortURL(ctx context.Context, alias string) (string, error)
+	BatchShortURLs(ctx context.Context, urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput
 }
 
 type handler struct {
-	uc     UseCase
+	uc     ShortURLUseCase
 	router Router
 }
 
-func Register(router Router, uc UseCase) {
+func Register(router Router, uc ShortURLUseCase) {
 	h := handler{router: router, uc: uc}
 	h.router.Get(shortenPath, h.FindShortURL())
 	h.router.Post(shortensPath, h.CreateShortURL())
@@ -37,9 +42,12 @@ func Register(router Router, uc UseCase) {
 
 func (h *handler) CreateShortURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var reqBody []byte
-		var shortURL string
+		var (
+			err        error
+			reqBody    []byte
+			shortURL   string
+			statusCode = http.StatusCreated
+		)
 
 		if r.Method != http.MethodPost {
 			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), http.StatusMethodNotAllowed)
@@ -61,15 +69,20 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			}
 		}(r.Body)
 
-		shortURL, err = h.uc.CreateShortURL(sourceURL)
+		shortURL, err = h.uc.CreateShortURL(r.Context(), sourceURL)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
-			return
+			if errors.Is(err, ucErrors.ErrShortURLAlreadyExist) {
+				statusCode = http.StatusConflict
+			} else {
+				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				return
+			}
 		}
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(statusCode)
+
 		_, err = io.WriteString(w, shortURL)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -83,7 +96,7 @@ func (h *handler) FindShortURL() http.HandlerFunc {
 			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), http.StatusMethodNotAllowed)
 			return
 		}
-		result, err := h.uc.FindShortURL(r.URL.Path)
+		result, err := h.uc.FindShortURL(r.Context(), r.URL.Path)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)

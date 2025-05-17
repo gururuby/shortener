@@ -1,10 +1,13 @@
-package errors
+package usecase
 
 import "errors"
 
 var (
-	ErrEmptyBaseURL      = errors.New("empty base URL, please specify base URL")
-	ErrEmptySourceURL    = errors.New("empty source URL, please specify source URL")
-	ErrEmptyAlias        = errors.New("empty alias, please specify alias")
-	ErrSourceURLNotFound = errors.New("source URL not found")
+	ErrAppDBIsNotReady = errors.New("db is not ready")
+
+	ErrShortURLAlreadyExist      = errors.New("short URL already exist")
+	ErrShortURLInvalidBaseURL    = errors.New("invalid base URL, please specify valid URL")
+	ErrShortURLInvalidSourceURL  = errors.New("invalid source URL, please specify valid URL")
+	ErrShortURLEmptyAlias        = errors.New("empty alias, please specify alias")
+	ErrShortURLSourceURLNotFound = errors.New("source URL not found")
 )

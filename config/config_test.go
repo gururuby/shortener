@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestConfig(t *testing.T) {
@@ -15,18 +16,20 @@ func TestConfig(t *testing.T) {
 			name: "setup default values",
 			want: &Config{
 				App: App{
-					AliasLength:           5,
-					Env:                   "development",
-					MaxGenerationAttempts: 5,
-					Name:                  "Shortener",
-					Version:               "0.0.1",
-					BaseURL:               "http://localhost:8080",
+					AliasLength: 5,
+					Env:         "development",
+					Name:        "Shortener",
+					Version:     "0.0.1",
+					BaseURL:     "http://localhost:8080",
 				},
 				Server: Server{
 					Address: "localhost:8080",
 				},
-				DB: DB{
-					Type: "file",
+				Database: Database{
+					Type:         "file",
+					DSN:          "",
+					ConnTryDelay: 5 * time.Second,
+					ConnTryTimes: 5,
 				},
 				FileStorage: FileStorage{
 					Path: "/tmp/db.json",

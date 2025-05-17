@@ -2,6 +2,7 @@ package file
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gururuby/shortener/internal/domain/entity"
@@ -48,7 +49,7 @@ func restoreShortURLs(f *os.File, shortURLs map[string]*entity.ShortURL) error {
 		dto := &fileDTO{}
 		err := json.Unmarshal([]byte(scanner.Text()), dto)
 		if err != nil {
-			return fmt.Errorf(dbErrors.ErrRestoreFromFile.Error(), err.Error())
+			return fmt.Errorf(dbErrors.ErrDBRestoreFromFile.Error(), err.Error())
 		}
 		shortURL := toShortURL(dto)
 		shortURLs[shortURL.Alias] = shortURL
@@ -73,26 +74,50 @@ func toShortURL(dto *fileDTO) *entity.ShortURL {
 	}
 }
 
-func (db *DB) Find(alias string) (*entity.ShortURL, error) {
+func (db *DB) Find(_ context.Context, alias string) (*entity.ShortURL, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 
 	shortURL, ok := db.shortURLs[alias]
 
 	if !ok {
-		return nil, dbErrors.ErrNotFound
+		return nil, dbErrors.ErrDBRecordNotFound
 	}
 
 	return shortURL, nil
 }
 
-func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *DB) findBySourceURL(_ context.Context, sourceURL string) (*entity.ShortURL, error) {
+	var (
+		shortURL  *entity.ShortURL
+		noRecords = true
+	)
+
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+
+	for _, url := range db.shortURLs {
+		if url.SourceURL == sourceURL {
+			shortURL = url
+			noRecords = false
+			break
+		}
+	}
+
+	if noRecords {
+		return nil, dbErrors.ErrDBRecordNotFound
+	}
+
+	return shortURL, nil
+}
+
+func (db *DB) Save(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	var err error
 	var record *entity.ShortURL
 	var data []byte
 
-	if record, _ = db.Find(shortURL.Alias); record != nil {
-		return nil, dbErrors.ErrIsNotUnique
+	if record, _ = db.findBySourceURL(ctx, shortURL.SourceURL); record != nil {
+		return record, dbErrors.ErrDBIsNotUnique
 	}
 
 	db.mutex.Lock()
@@ -110,4 +135,9 @@ func (db *DB) Save(shortURL *entity.ShortURL) (*entity.ShortURL, error) {
 	}
 
 	return shortURL, nil
+}
+
+func (db *DB) Ping(_ context.Context) error {
+	_, err := db.file.Stat()
+	return err
 }

@@ -1,17 +1,21 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/gururuby/shortener/config"
 	"github.com/gururuby/shortener/internal/domain/dao"
 	"github.com/gururuby/shortener/internal/domain/entity"
-	"github.com/gururuby/shortener/internal/domain/usecase"
-	httpHandler "github.com/gururuby/shortener/internal/handler/http"
-	apiHandler "github.com/gururuby/shortener/internal/handler/http/api"
+	ucApp "github.com/gururuby/shortener/internal/domain/usecase/app"
+	ucShortURL "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
+	handlerAPI "github.com/gururuby/shortener/internal/handler/http/api"
+	handlerApp "github.com/gururuby/shortener/internal/handler/http/app"
+	handlerShortURL "github.com/gururuby/shortener/internal/handler/http/shorturl"
 	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
 	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
 	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
+	postgresqlDB "github.com/gururuby/shortener/internal/infra/db/postgresql"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/utils/generator"
 	"github.com/gururuby/shortener/internal/middleware"
@@ -20,13 +24,15 @@ import (
 )
 
 type DAO interface {
-	FindByAlias(alias string) (*entity.ShortURL, error)
-	Save(sourceURL string) (*entity.ShortURL, error)
+	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
+	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
+	IsDBReady(ctx context.Context) error
 }
 
 type DB interface {
-	Find(string) (*entity.ShortURL, error)
-	Save(*entity.ShortURL) (*entity.ShortURL, error)
+	Find(context.Context, string) (*entity.ShortURL, error)
+	Save(context.Context, *entity.ShortURL) (*entity.ShortURL, error)
+	Ping(context.Context) error
 }
 
 type Router interface {
@@ -39,58 +45,64 @@ type App struct {
 	Router  Router
 }
 
-func Setup() *App {
+func New(cfg *config.Config) *App {
+	return &App{Config: cfg}
+}
+
+func (a *App) Setup() *App {
 	var setupErr error
-	var cfg *config.Config
 	var storage DAO
 	var db DB
 
-	cfg, setupErr = config.New()
-	if setupErr != nil {
-		log.Fatalf("cannot setup config: %s", setupErr)
-	}
+	ctx := context.Background()
 
-	logger.Initialize(cfg.App.Env, cfg.Log.Level)
+	logger.Initialize(a.Config.App.Env, a.Config.Log.Level)
 
-	gen := generator.New(cfg.App.AliasLength)
+	gen := generator.New(a.Config.App.AliasLength)
 
-	db, setupErr = setupDB(cfg)
+	db, setupErr = setupDB(ctx, a.Config)
 	if setupErr != nil {
 		log.Fatalf("cannot setup database: %s", setupErr)
 	}
 
-	storage = dao.New(gen, cfg, db)
+	storage = dao.New(gen, db)
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logging)
 	router.Use(middleware.Compression)
 
-	uc := usecase.NewUseCase(storage, cfg.App.BaseURL)
+	shortURLUseCase := ucShortURL.NewShortURLUseCase(storage, a.Config.App.BaseURL)
+	appUseCase := ucApp.NewAppUseCase(storage)
 
-	httpHandler.Register(router, uc)
-	apiHandler.Register(router, uc)
+	handlerShortURL.Register(router, shortURLUseCase)
+	handlerApp.Register(router, appUseCase)
+	handlerAPI.Register(router, shortURLUseCase)
 
-	return &App{Storage: storage, Config: cfg, Router: router}
+	a.Storage = storage
+	a.Router = router
+
+	return a
 }
 
-func setupDB(cfg *config.Config) (DB, error) {
-	var db DB
-	var err error
+func (a *App) Run() {
+	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
+	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
+}
 
-	switch cfg.DB.Type {
+func setupDB(ctx context.Context, cfg *config.Config) (db DB, err error) {
+	switch cfg.Database.Type {
 	case "memory":
 		db = memoryDB.New()
 	case "file":
 		if db, err = fileDB.New(cfg.FileStorage.Path); err != nil {
 			log.Fatalf("cannot setup file DB: %s", err)
 		}
+	case "postgresql":
+		if db, err = postgresqlDB.New(ctx, cfg); err != nil {
+			log.Fatalf("cannot setup postgresql DB: %s", err)
+		}
 	default:
 		db = nullDB.New()
 	}
-	return db, err
-}
-
-func (a *App) Run() {
-	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
-	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
+	return
 }

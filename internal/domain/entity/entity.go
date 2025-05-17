@@ -1,6 +1,7 @@
 package entity
 
-//go:generate mockgen -destination=./mock_entity/mock.go . Generator
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . Generator
+
 type Generator interface {
 	UUID() string
 	Alias() string
@@ -10,6 +11,16 @@ type ShortURL struct {
 	UUID      string
 	SourceURL string
 	Alias     string
+}
+
+type BatchShortURLInput struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type BatchShortURLOutput struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
 }
 
 func NewShortURL(g Generator, sourceURL string) *ShortURL {

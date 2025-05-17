@@ -1,17 +1,19 @@
-//go:generate mockgen -destination=./mock_dao/mock.go . DB
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DB
 
 package dao
 
 import (
+	"context"
 	"errors"
-	"github.com/gururuby/shortener/config"
+	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
 	"github.com/gururuby/shortener/internal/domain/entity"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
 
 type DB interface {
-	Find(string) (*entity.ShortURL, error)
-	Save(*entity.ShortURL) (*entity.ShortURL, error)
+	Find(context.Context, string) (*entity.ShortURL, error)
+	Save(context.Context, *entity.ShortURL) (*entity.ShortURL, error)
+	Ping(context.Context) error
 }
 
 type Generator interface {
@@ -21,40 +23,33 @@ type Generator interface {
 
 type DAO struct {
 	gen Generator
-	cfg *config.Config
 	db  DB
 }
 
-func New(gen Generator, cfg *config.Config, db DB) *DAO {
+func New(gen Generator, db DB) *DAO {
 	dao := &DAO{
 		gen: gen,
-		cfg: cfg,
 		db:  db,
 	}
 
 	return dao
 }
 
-func (dao *DAO) FindByAlias(alias string) (*entity.ShortURL, error) {
-	return dao.db.Find(alias)
+func (dao *DAO) FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error) {
+	return dao.db.Find(ctx, alias)
 }
 
-func (dao *DAO) Save(sourceURL string) (*entity.ShortURL, error) {
-	return dao.saveWithAttempt(1, sourceURL)
-}
-
-func (dao *DAO) saveWithAttempt(startAttemptCount int, sourceURL string) (*entity.ShortURL, error) {
-	if startAttemptCount > dao.cfg.App.MaxGenerationAttempts {
-		return nil, dbErrors.ErrIsNotUnique
-	}
-
+func (dao *DAO) Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
 	shortURL := entity.NewShortURL(dao.gen, sourceURL)
-	record, err := dao.db.Save(shortURL)
-
-	if errors.Is(err, dbErrors.ErrIsNotUnique) {
-		startAttemptCount++
-		return dao.saveWithAttempt(startAttemptCount, sourceURL)
+	res, err := dao.db.Save(ctx, shortURL)
+	if err != nil {
+		if errors.Is(err, dbErrors.ErrDBIsNotUnique) {
+			return res, daoErrors.ErrDAORecordIsNotUnique
+		}
 	}
+	return res, err
+}
 
-	return record, err
+func (dao *DAO) IsDBReady(ctx context.Context) error {
+	return dao.db.Ping(ctx)
 }

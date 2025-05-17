@@ -3,6 +3,10 @@ package app
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
+	"fmt"
+	"github.com/brianvoe/gofakeit/v7"
+	"github.com/gururuby/shortener/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -40,13 +44,16 @@ type (
 )
 
 func TestAppOkRequests(t *testing.T) {
-	app := Setup()
+	cfg, err := config.New()
+	ctx := context.Background()
+	require.NoError(t, err)
+
+	app := New(cfg).Setup()
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
-	sourceURL := "https://example.com"
-	existingRecord, err := app.Storage.Save(sourceURL)
-	require.NoError(t, err)
+	sourceURL := "https://ya.ru"
+	existingRecord, _ := app.Storage.Save(ctx, sourceURL)
 
 	var tests = []struct {
 		name     string
@@ -57,7 +64,7 @@ func TestAppOkRequests(t *testing.T) {
 		{
 			name: "when create ShortURL via http",
 			request: request{
-				body:    []byte("https://ya.ru"),
+				body:    []byte(gofakeit.URL()),
 				headers: headers{contentType: "text/plain; charset=utf-8"},
 				method:  http.MethodPost,
 				path:    "/",
@@ -66,12 +73,12 @@ func TestAppOkRequests(t *testing.T) {
 				headers: headers{contentType: "text/plain; charset=utf-8"},
 				status:  http.StatusCreated,
 			},
-			want: "^http://localhost:8080/\\w{5}$",
+			want: `http://localhost:8080/\w{5}`,
 		},
 		{
 			name: "when create via API",
 			request: request{
-				body:    []byte(`{"url":"https://ya.ru"}`),
+				body:    []byte(fmt.Sprintf(`{"url":"%s"}`, gofakeit.URL())),
 				headers: headers{contentType: "application/json"},
 				method:  http.MethodPost,
 				path:    "/api/shorten",
@@ -80,7 +87,35 @@ func TestAppOkRequests(t *testing.T) {
 				headers: headers{contentType: "application/json"},
 				status:  http.StatusCreated,
 			},
-			want: "\\{\"Result\":\"http://localhost:8080/\\w{5}\"\\}",
+			want: `{"Result":"http://localhost:8080/\w{5}"}`,
+		},
+		{
+			name: "when try to create via API with the same source URL",
+			request: request{
+				body:    []byte(`{"url":"https://ya.ru"}`),
+				headers: headers{contentType: "application/json"},
+				method:  http.MethodPost,
+				path:    "/api/shorten",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusConflict,
+			},
+			want: `{"Result":"http://localhost:8080/\w{5}"}`,
+		},
+		{
+			name: "when batch creating via API",
+			request: request{
+				body:    []byte(fmt.Sprintf(`[{"correlation_id":"1","original_url":"%s"},{"correlation_id":"2","original_url":"%s"}]`, gofakeit.URL(), gofakeit.URL())),
+				headers: headers{contentType: "application/json"},
+				method:  http.MethodPost,
+				path:    "/api/shorten/batch",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusCreated,
+			},
+			want: `{"correlation_id":"1","short_url":"http://localhost:8080/\w{5}"},{"correlation_id":"2","short_url":"http://localhost:8080/\w{5}"}`,
 		},
 		{
 			name: "when find ShortURL via http",
@@ -113,7 +148,11 @@ func TestAppOkRequests(t *testing.T) {
 }
 
 func TestAppCompressRequests(t *testing.T) {
-	app := Setup()
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	app := New(cfg).Setup()
+
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
@@ -126,7 +165,7 @@ func TestAppCompressRequests(t *testing.T) {
 		{
 			name: "when send gzipped text/html",
 			request: compressedRequest{
-				body: zippify(t, "https://ya.ru"),
+				body: zippify(t, gofakeit.URL()),
 				headers: headers{
 					contentType:     "text/html",
 					contentEncoding: "gzip",
@@ -143,12 +182,12 @@ func TestAppCompressRequests(t *testing.T) {
 				},
 				status: http.StatusCreated,
 			},
-			want: "^http://localhost:8080/\\w{5}$",
+			want: `\Ahttp://localhost:8080/\w{5}\z`,
 		},
 		{
 			name: "when content type is a application/json",
 			request: compressedRequest{
-				body: zippify(t, `{"url":"https://ya.ru"}`),
+				body: zippify(t, fmt.Sprintf(`{"url":"%s"}`, gofakeit.URL())),
 				headers: headers{
 					contentType:     "application/json",
 					contentEncoding: "gzip",
@@ -165,7 +204,7 @@ func TestAppCompressRequests(t *testing.T) {
 				},
 				status: http.StatusCreated,
 			},
-			want: "\\{\"Result\":\"http://localhost:8080/\\w{5}\"\\}",
+			want: `{"Result":"http://localhost:8080/\w{5}"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -198,7 +237,11 @@ func TestAppCompressRequests(t *testing.T) {
 }
 
 func TestAppErrorRequests(t *testing.T) {
-	app := Setup()
+	cfg, err := config.New()
+	require.NoError(t, err)
+
+	app := New(cfg).Setup()
+
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
@@ -220,6 +263,24 @@ func TestAppErrorRequests(t *testing.T) {
 				status:  http.StatusUnprocessableEntity,
 			},
 			want: "record not found\n",
+		},
+		{
+			name: "when passed incorrect url via API",
+			request: request{
+				body: []byte(`{"url":"//ya.ru"}`),
+				headers: headers{
+					contentType:     "application/json",
+					contentEncoding: "application/json",
+					acceptEncoding:  "application/json",
+				},
+				method: http.MethodPost,
+				path:   "/api/shorten",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusUnprocessableEntity,
+			},
+			want: `{"StatusCode":422,"Error":"invalid source URL, please specify valid URL"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -243,9 +304,13 @@ func testRequest(t *testing.T, ts *httptest.Server, r request) (*http.Response, 
 	var resp *http.Response
 
 	req, err = http.NewRequest(r.method, ts.URL+r.path, bytes.NewReader(r.body))
-	require.NoError(t, err)
 
+	req.RequestURI = ""
 	req.Header.Set("Content-Type", r.headers.contentType)
+	req.Header.Set("Content-Encoding", r.headers.contentEncoding)
+	req.Header.Set("Accept-Encoding", r.headers.acceptEncoding)
+
+	require.NoError(t, err)
 
 	resp, err = ts.Client().Do(req)
 	require.NoError(t, err)
