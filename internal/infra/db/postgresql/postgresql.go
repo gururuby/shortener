@@ -28,7 +28,8 @@ const (
 	findUserQuery                = `SELECT id FROM users WHERE users.id = $1`
 	findUserURLsQuery            = `SELECT alias, original_url FROM urls WHERE urls.user_id = $1`
 	findShortURLBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
-	saveShortURLQuery            = `INSERT INTO urls (alias, original_url, user_id) VALUES ($1, $2, $3)`
+	saveShortURLQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
+	saveShortURLQueryWithUser    = `INSERT INTO urls (alias, original_url, user_id) VALUES ($1, $2, $3)`
 	saveUserQuery                = `INSERT INTO users DEFAULT VALUES RETURNING id`
 )
 
@@ -175,8 +176,14 @@ func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.Short
 	}
 
 	if errors.Is(err, dbErrors.ErrDBRecordNotFound) {
-		if _, err = db.pool.Exec(ctx, saveShortURLQuery, shortURL.Alias, shortURL.SourceURL, shortURL.UserID); err == nil {
-			return shortURL, nil
+		if shortURL.UserID == 0 {
+			if _, err = db.pool.Exec(ctx, saveShortURLQuery, shortURL.Alias, shortURL.SourceURL); err == nil {
+				return shortURL, nil
+			}
+		} else {
+			if _, err = db.pool.Exec(ctx, saveShortURLQueryWithUser, shortURL.Alias, shortURL.SourceURL, shortURL.UserID); err == nil {
+				return shortURL, nil
+			}
 		}
 
 		if errors.As(err, &pgErr) {
