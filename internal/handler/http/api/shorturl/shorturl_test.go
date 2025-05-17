@@ -3,8 +3,9 @@ package handler
 import (
 	"bytes"
 	"github.com/go-chi/chi/v5"
+	entity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
-	"github.com/gururuby/shortener/internal/handler/http/shorturl/mocks"
+	"github.com/gururuby/shortener/internal/handler/http/api/shorturl/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -38,10 +39,12 @@ func Test_CreateShortURL_OK(t *testing.T) {
 	var body []byte
 
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
+	userUC := mocks.NewMockUserUseCase(ctrl)
+	user := &entity.User{ID: 1}
 
 	r := chi.NewRouter()
-	h := handler{router: r, uc: uc}
+	h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
 	var tests = []struct {
 		name     string
@@ -74,7 +77,8 @@ func Test_CreateShortURL_OK(t *testing.T) {
 			req := httptest.NewRequest(tt.request.method, tt.request.path, tt.request.body)
 			req.Header.Set("Content-Type", tt.request.contentType)
 			w := httptest.NewRecorder()
-			uc.EXPECT().CreateShortURL(gomock.Any(), tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
+			userUC.EXPECT().Register(gomock.Any()).Return(user, nil).Times(1)
+			urlUC.EXPECT().CreateShortURL(gomock.Any(), user, tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
 			h.CreateShortURL()(w, req)
 
 			resp := w.Result()
@@ -98,10 +102,12 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 	var body []byte
 
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
+	userUC := mocks.NewMockUserUseCase(ctrl)
+	user := &entity.User{ID: 1}
 
 	r := chi.NewRouter()
-	h := handler{router: r, uc: uc}
+	h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
 	var tests = []struct {
 		name     string
@@ -180,7 +186,8 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 			req.Header.Set("Content-Type", tt.request.contentType)
 			w := httptest.NewRecorder()
 			if tt.ucInput != "" {
-				uc.EXPECT().CreateShortURL(gomock.Any(), tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
+				userUC.EXPECT().Register(gomock.Any()).Return(user, nil).Times(1)
+				urlUC.EXPECT().CreateShortURL(gomock.Any(), user, tt.ucInput).Return(tt.ucOutput.res, tt.ucOutput.err).Times(1)
 			}
 			h.CreateShortURL()(w, req)
 
@@ -205,10 +212,10 @@ func Test_BatchShortURLs_Errors(t *testing.T) {
 	var body []byte
 
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
 
 	r := chi.NewRouter()
-	h := handler{router: r, uc: uc}
+	h := handler{router: r, urlUC: urlUC}
 
 	var tests = []struct {
 		name     string

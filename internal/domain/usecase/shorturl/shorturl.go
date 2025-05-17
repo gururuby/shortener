@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . Storage
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . ShortURLStorage
 
 package usecase
 
@@ -6,31 +6,32 @@ import (
 	"context"
 	"errors"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
-	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/pkg/validator"
 	"strings"
 )
 
-type Storage interface {
-	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
-	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
+type ShortURLStorage interface {
+	FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error)
+	SaveShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (*entity.ShortURL, error)
 }
 
 type ShortURLUseCase struct {
 	baseURL string
-	storage Storage
+	storage ShortURLStorage
 }
 
-func NewShortURLUseCase(storage Storage, baseURL string) *ShortURLUseCase {
+func NewShortURLUseCase(storage ShortURLStorage, baseURL string) *ShortURLUseCase {
 	return &ShortURLUseCase{
 		storage: storage,
 		baseURL: baseURL,
 	}
 }
 
-func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, sourceURL string) (string, error) {
+func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (string, error) {
 	if validator.IsInvalidURL(u.baseURL) {
 		return "", ucErrors.ErrShortURLInvalidBaseURL
 	}
@@ -39,7 +40,7 @@ func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, sourceURL string) 
 		return "", ucErrors.ErrShortURLInvalidSourceURL
 	}
 
-	result, err := u.storage.Save(ctx, sourceURL)
+	result, err := u.storage.SaveShortURL(ctx, user, sourceURL)
 
 	if err != nil {
 		if errors.Is(err, storageErrors.ErrStorageRecordIsNotUnique) {
@@ -59,7 +60,7 @@ func (u *ShortURLUseCase) FindShortURL(ctx context.Context, alias string) (strin
 		return "", ucErrors.ErrShortURLEmptyAlias
 	}
 
-	res, err := u.storage.FindByAlias(ctx, alias)
+	res, err := u.storage.FindShortURL(ctx, alias)
 	if err != nil {
 		return "", err
 	}
@@ -75,7 +76,7 @@ func (u *ShortURLUseCase) BatchShortURLs(ctx context.Context, urls []entity.Batc
 	var res []entity.BatchShortURLOutput
 
 	for _, url := range urls {
-		shortURL, err := u.CreateShortURL(ctx, url.OriginalURL)
+		shortURL, err := u.CreateShortURL(ctx, nil, url.OriginalURL)
 		if err != nil {
 			logger.Log.Info(err.Error())
 			continue

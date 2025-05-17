@@ -3,7 +3,8 @@ package db
 import (
 	"context"
 	"github.com/gururuby/shortener/internal/config"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
 	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
 	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
@@ -12,8 +13,11 @@ import (
 )
 
 type DB interface {
-	FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error)
-	SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error)
+	FindShortURL(ctx context.Context, alias string) (*shortURLEntity.ShortURL, error)
+	SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error)
+	FindUser(ctx context.Context, id int) (*userEntity.User, error)
+	FindUserURLs(ctx context.Context, id int) ([]*shortURLEntity.ShortURL, error)
+	SaveUser(ctx context.Context) (*userEntity.User, error)
 	Ping(ctx context.Context) error
 }
 

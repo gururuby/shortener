@@ -6,7 +6,6 @@ import (
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
 	"log"
-	"os"
 	"time"
 )
 
@@ -29,7 +28,8 @@ type (
 	}
 
 	Auth struct {
-		SecretKey string `env:"AUTH_SECRET_KEY" envDefault:"secret"`
+		TokenTTL  time.Duration `env:"AUTH_TOKEN_TTL" envDefault:"24h"`
+		SecretKey string        `env:"AUTH_SECRET_KEY" envDefault:"secret"`
 	}
 
 	Server struct {
@@ -57,11 +57,9 @@ var cfg Config
 func New() (*Config, error) {
 	var err error
 
-	if _, err = os.Stat("../.env"); err == nil {
-		err = godotenv.Load("../.env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
+	err = godotenv.Load(".env")
+	if err != nil {
+		log.Print("Error loading .env file")
 	}
 
 	if err = env.Parse(&cfg); err != nil {

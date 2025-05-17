@@ -2,7 +2,8 @@ package db
 
 import (
 	"context"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 )
 
 type NullDB struct{}
@@ -11,15 +12,25 @@ func New() *NullDB {
 	return &NullDB{}
 }
 
-func (db *NullDB) FindShortURL(_ context.Context, _ string) (*entity.ShortURL, error) {
+func (db *NullDB) FindUser(_ context.Context, _ int) (*userEntity.User, error) {
 	return nil, nil
 }
 
-func (db *NullDB) findBySourceURL(_ context.Context, _ string) (*entity.ShortURL, error) {
+func (db *NullDB) FindUserURLs(_ context.Context, _ int) ([]*shortURLEntity.ShortURL, error) {
 	return nil, nil
 }
 
-func (db *NullDB) SaveShortURL(_ context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *NullDB) SaveUser(_ context.Context) (*userEntity.User, error) {
+	return nil, nil
+}
+
+func (db *NullDB) FindShortURL(_ context.Context, _ string) (*shortURLEntity.ShortURL, error) {
+	return nil, nil
+}
+func (db *NullDB) findShortURLBySourceURL(_ context.Context, _ string) (*shortURLEntity.ShortURL, error) {
+	return nil, nil
+}
+func (db *NullDB) SaveShortURL(_ context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error) {
 	return shortURL, nil
 }
 

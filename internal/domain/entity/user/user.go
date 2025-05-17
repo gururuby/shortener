@@ -1,5 +1,6 @@
 package entity
 
 type User struct {
-	UUID string
+	ID        int
+	AuthToken string
 }

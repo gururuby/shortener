@@ -7,7 +7,8 @@ import (
 	"embed"
 	"errors"
 	"github.com/gururuby/shortener/internal/config"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/pkg/retry"
@@ -23,9 +24,12 @@ import (
 var migrations embed.FS
 
 const (
-	findQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1`
-	findBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
-	saveQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
+	findShortURLQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1`
+	findUserQuery                = `SELECT id FROM users WHERE users.id = $1`
+	findUserURLsQuery            = `SELECT alias, original_url FROM urls WHERE urls.user_id = $1`
+	findShortURLBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
+	saveShortURLQuery            = `INSERT INTO urls (alias, original_url, user_id) VALUES ($1, $2, $3)`
+	saveUserQuery                = `INSERT INTO users DEFAULT VALUES RETURNING id`
 )
 
 type PGDBPool interface {
@@ -40,8 +44,10 @@ type PGDB struct {
 }
 
 func New(ctx context.Context, cfg *config.Config) (*PGDB, error) {
-	var err error
-	var pool *pgxpool.Pool
+	var (
+		err  error
+		pool *pgxpool.Pool
+	)
 
 	goose.SetBaseFS(migrations)
 	if err = goose.SetDialect("postgres"); err != nil {
@@ -68,9 +74,11 @@ func New(ctx context.Context, cfg *config.Config) (*PGDB, error) {
 }
 
 func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) {
-	var pool *pgxpool.Pool
-	var err error
-	var cancel context.CancelFunc
+	var (
+		pool   *pgxpool.Pool
+		err    error
+		cancel context.CancelFunc
+	)
 
 	err = utils.Retry(func() error {
 		ctx, cancel = context.WithTimeout(ctx, cfg.ConnTryDelay)
@@ -90,9 +98,62 @@ func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) 
 	return pool, err
 }
 
-func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error) {
-	shortURL := entity.ShortURL{Alias: alias}
-	err := db.pool.QueryRow(ctx, findQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
+func (db *PGDB) FindUser(ctx context.Context, id int) (*userEntity.User, error) {
+	user := userEntity.User{ID: id}
+	err := db.pool.QueryRow(ctx, findUserQuery, id).Scan(&user.ID)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, dbErrors.ErrDBRecordNotFound
+		} else {
+			logger.Log.Error(err.Error())
+			return nil, dbErrors.ErrDBQuery
+		}
+	}
+
+	return &user, nil
+}
+
+func (db *PGDB) FindUserURLs(ctx context.Context, userID int) ([]*shortURLEntity.ShortURL, error) {
+	var (
+		alias       string
+		originalURL string
+		urls        []*shortURLEntity.ShortURL
+	)
+
+	rows, err := db.pool.Query(ctx, findUserURLsQuery, userID)
+	if err != nil {
+		logger.Log.Error(err.Error())
+		return nil, dbErrors.ErrDBQuery
+	}
+
+	_, err = pgx.ForEachRow(rows, []any{&alias, &originalURL}, func() error {
+		urls = append(urls, &shortURLEntity.ShortURL{Alias: alias, SourceURL: originalURL})
+		return nil
+	})
+
+	if err != nil {
+		logger.Log.Error(err.Error())
+		return nil, dbErrors.ErrDBQuery
+	}
+
+	return urls, nil
+}
+
+func (db *PGDB) SaveUser(ctx context.Context) (*userEntity.User, error) {
+	user := userEntity.User{}
+	err := db.pool.QueryRow(ctx, saveUserQuery).Scan(&user.ID)
+	if err != nil {
+		logger.Log.Error(err.Error())
+		return nil, dbErrors.ErrDBQuery
+	}
+
+	return &user, err
+}
+
+func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*shortURLEntity.ShortURL, error) {
+	shortURL := shortURLEntity.ShortURL{Alias: alias}
+	err := db.pool.QueryRow(ctx, findShortURLQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
 
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -102,20 +163,19 @@ func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*entity.ShortUR
 	return &shortURL, nil
 }
 
-func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
+func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error) {
 	var (
 		err              error
 		pgErr            *pgconn.PgError
-		existingShortURL *entity.ShortURL
+		existingShortURL *shortURLEntity.ShortURL
 	)
 
-	if existingShortURL, err = db.findBySourceURL(ctx, shortURL.SourceURL); err == nil {
+	if existingShortURL, err = db.findShortURLBySourceURL(ctx, shortURL.SourceURL); err == nil {
 		return existingShortURL, dbErrors.ErrDBIsNotUnique
 	}
 
-	logger.Log.Error(err.Error())
 	if errors.Is(err, dbErrors.ErrDBRecordNotFound) {
-		if _, err = db.pool.Exec(ctx, saveQuery, shortURL.Alias, shortURL.SourceURL); err == nil {
+		if _, err = db.pool.Exec(ctx, saveShortURLQuery, shortURL.Alias, shortURL.SourceURL, shortURL.UserID); err == nil {
 			return shortURL, nil
 		}
 
@@ -131,9 +191,9 @@ func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*e
 	return nil, err
 }
 
-func (db *PGDB) findBySourceURL(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
-	shortURL := entity.ShortURL{SourceURL: sourceURL}
-	err := db.pool.QueryRow(ctx, findBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
+func (db *PGDB) findShortURLBySourceURL(ctx context.Context, sourceURL string) (*shortURLEntity.ShortURL, error) {
+	shortURL := shortURLEntity.ShortURL{SourceURL: sourceURL}
+	err := db.pool.QueryRow(ctx, findShortURLBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

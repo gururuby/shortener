@@ -1,3 +1,5 @@
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . ShortURLUseCase,UserUseCase
+
 package handler
 
 import (
@@ -5,14 +7,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
-	apiErrors "github.com/gururuby/shortener/internal/handler/http/api/errors"
+	apiErrors "github.com/gururuby/shortener/internal/handler/http/api/shorturl/errors"
 	"net/http"
 	"time"
 )
 
 const (
+	authCookieName        = "Authorization"
 	createShortURLTimeout = time.Second * 30
 	createShortURLPath    = "/api/shorten"
 
@@ -25,13 +29,19 @@ type Router interface {
 }
 
 type ShortURLUseCase interface {
-	CreateShortURL(ctx context.Context, sourceURL string) (string, error)
+	CreateShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (string, error)
 	FindShortURL(ctx context.Context, alias string) (string, error)
-	BatchShortURLs(ctx context.Context, urls []entity.BatchShortURLInput) []entity.BatchShortURLOutput
+	BatchShortURLs(ctx context.Context, urls []shortURLEntity.BatchShortURLInput) []shortURLEntity.BatchShortURLOutput
+}
+
+type UserUseCase interface {
+	Authenticate(ctx context.Context, token string) (*userEntity.User, error)
+	Register(ctx context.Context) (*userEntity.User, error)
 }
 
 type handler struct {
-	uc     ShortURLUseCase
+	userUC UserUseCase
+	urlUC  ShortURLUseCase
 	router Router
 }
 
@@ -51,13 +61,13 @@ type (
 	}
 
 	batchShortURLsDTO struct {
-		inputURLs  []entity.BatchShortURLInput
-		outputURLs []entity.BatchShortURLOutput
+		inputURLs  []shortURLEntity.BatchShortURLInput
+		outputURLs []shortURLEntity.BatchShortURLOutput
 	}
 )
 
-func Register(router Router, uc ShortURLUseCase) {
-	h := handler{router: router, uc: uc}
+func Register(router Router, userUC UserUseCase, urlUC ShortURLUseCase) {
+	h := handler{router: router, userUC: userUC, urlUC: urlUC}
 	h.router.Post(batchShortURLsPath, h.BatchShortURLs())
 	h.router.Post(createShortURLPath, h.CreateShortURL())
 }
@@ -66,6 +76,7 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
 			err        error
+			user       *userEntity.User
 			statusCode = http.StatusCreated
 			shortURL   string
 			response   []byte
@@ -92,7 +103,15 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			return
 		}
 
-		shortURL, err = h.uc.CreateShortURL(ctx, dto.request.URL)
+		user, err = h.authUser(ctx, r, w)
+		if err != nil {
+			errRes.Error = err.Error()
+			errRes.StatusCode = http.StatusUnprocessableEntity
+			returnErrResponse(errRes, w)
+			return
+		}
+
+		shortURL, err = h.urlUC.CreateShortURL(ctx, user, dto.request.URL)
 
 		if err != nil {
 			if errors.Is(err, ucErrors.ErrShortURLAlreadyExist) {
@@ -122,6 +141,35 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
+}
+
+func (h *handler) authUser(ctx context.Context, r *http.Request, w http.ResponseWriter) (*userEntity.User, error) {
+	var (
+		authCookie *http.Cookie
+		user       *userEntity.User
+		err        error
+	)
+
+	authCookie, err = r.Cookie(authCookieName)
+	// If auth cookie was not passed
+	if err != nil && errors.Is(err, http.ErrNoCookie) {
+		// Register new User
+		if user, err = h.userUC.Register(ctx); err != nil {
+			return nil, err
+		}
+
+	} else { // If auth cookie exist, try to authenticate User
+		if user, err = h.userUC.Authenticate(ctx, authCookie.Value); err != nil {
+			// If auth cookie is invalid or user not found try to register new user
+			if user, err = h.userUC.Register(ctx); err != nil {
+				return nil, err
+			}
+		}
+	}
+	// Setup auth cookie
+	http.SetCookie(w, &http.Cookie{Name: authCookieName, Value: user.AuthToken})
+
+	return user, nil
 }
 
 func (h *handler) BatchShortURLs() http.HandlerFunc {
@@ -159,7 +207,7 @@ func (h *handler) BatchShortURLs() http.HandlerFunc {
 			return
 		}
 
-		dto.outputURLs = h.uc.BatchShortURLs(ctx, dto.inputURLs)
+		dto.outputURLs = h.urlUC.BatchShortURLs(ctx, dto.inputURLs)
 		response, err = json.Marshal(dto.outputURLs)
 
 		if err != nil {

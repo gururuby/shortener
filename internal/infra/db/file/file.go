@@ -5,7 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"os"
 	"sync"
@@ -14,17 +15,22 @@ import (
 type FileDB struct {
 	mutex     sync.RWMutex
 	file      *os.File
-	shortURLs map[string]*entity.ShortURL
+	shortURLs map[string]*shortURLEntity.ShortURL
+	users     map[int]*userEntity.User
 }
 
 type fileDTO struct {
+	UserID      int    `json:"user_id"`
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
 func New(filePath string) (*FileDB, error) {
-	var shortURLs = make(map[string]*entity.ShortURL)
+	var (
+		shortURLs = make(map[string]*shortURLEntity.ShortURL)
+		users     = make(map[int]*userEntity.User)
+	)
 
 	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
@@ -39,10 +45,11 @@ func New(filePath string) (*FileDB, error) {
 	return &FileDB{
 		file:      f,
 		shortURLs: shortURLs,
+		users:     users,
 	}, nil
 }
 
-func restoreShortURLs(f *os.File, shortURLs map[string]*entity.ShortURL) error {
+func restoreShortURLs(f *os.File, shortURLs map[string]*shortURLEntity.ShortURL) error {
 	scanner := bufio.NewScanner(f)
 
 	for scanner.Scan() {
@@ -58,23 +65,52 @@ func restoreShortURLs(f *os.File, shortURLs map[string]*entity.ShortURL) error {
 	return scanner.Err()
 }
 
-func toFileDTO(shortURL *entity.ShortURL) *fileDTO {
+func toFileDTO(shortURL *shortURLEntity.ShortURL) *fileDTO {
 	return &fileDTO{
+		UserID:      shortURL.UserID,
 		UUID:        shortURL.UUID,
 		ShortURL:    shortURL.Alias,
 		OriginalURL: shortURL.SourceURL,
 	}
 }
 
-func toShortURL(dto *fileDTO) *entity.ShortURL {
-	return &entity.ShortURL{
+func toShortURL(dto *fileDTO) *shortURLEntity.ShortURL {
+	return &shortURLEntity.ShortURL{
+		UserID:    dto.UserID,
 		UUID:      dto.UUID,
 		Alias:     dto.ShortURL,
 		SourceURL: dto.OriginalURL,
 	}
 }
 
-func (db *FileDB) FindShortURL(_ context.Context, alias string) (*entity.ShortURL, error) {
+func (db *FileDB) FindUser(_ context.Context, id int) (*userEntity.User, error) {
+	user, ok := db.users[id]
+	if !ok {
+		return nil, dbErrors.ErrDBRecordNotFound
+	}
+	return user, nil
+}
+
+func (db *FileDB) FindUserURLs(_ context.Context, userID int) ([]*shortURLEntity.ShortURL, error) {
+	var urls []*shortURLEntity.ShortURL
+
+	for _, url := range db.shortURLs {
+		if url.UserID == userID {
+			urls = append(urls, url)
+		}
+	}
+
+	return urls, nil
+}
+
+func (db *FileDB) SaveUser(_ context.Context) (*userEntity.User, error) {
+	id := len(db.users) + 1
+	user := &userEntity.User{ID: id}
+	db.users[id] = user
+	return user, nil
+}
+
+func (db *FileDB) FindShortURL(_ context.Context, alias string) (*shortURLEntity.ShortURL, error) {
 	db.mutex.RLock()
 	defer db.mutex.RUnlock()
 
@@ -87,9 +123,9 @@ func (db *FileDB) FindShortURL(_ context.Context, alias string) (*entity.ShortUR
 	return shortURL, nil
 }
 
-func (db *FileDB) findBySourceURL(_ context.Context, sourceURL string) (*entity.ShortURL, error) {
+func (db *FileDB) findShortURLBySourceURL(_ context.Context, sourceURL string) (*shortURLEntity.ShortURL, error) {
 	var (
-		shortURL  *entity.ShortURL
+		shortURL  *shortURLEntity.ShortURL
 		noRecords = true
 	)
 
@@ -111,12 +147,14 @@ func (db *FileDB) findBySourceURL(_ context.Context, sourceURL string) (*entity.
 	return shortURL, nil
 }
 
-func (db *FileDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
-	var err error
-	var record *entity.ShortURL
-	var data []byte
+func (db *FileDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error) {
+	var (
+		err    error
+		record *shortURLEntity.ShortURL
+		data   []byte
+	)
 
-	if record, _ = db.findBySourceURL(ctx, shortURL.SourceURL); record != nil {
+	if record, _ = db.findShortURLBySourceURL(ctx, shortURL.SourceURL); record != nil {
 		return record, dbErrors.ErrDBIsNotUnique
 	}
 

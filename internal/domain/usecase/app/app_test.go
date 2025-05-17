@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"context"
-	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 	"github.com/gururuby/shortener/internal/domain/usecase/app/mocks"
 	"github.com/stretchr/testify/require"

@@ -23,6 +23,7 @@ func TestConfig(t *testing.T) {
 					BaseURL:     "http://localhost:8080",
 				},
 				Auth: Auth{
+					TokenTTL:  24 * time.Hour,
 					SecretKey: "secret",
 				},
 				Server: Server{

@@ -2,21 +2,51 @@ package db
 
 import (
 	"context"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
 
 type MemoryDB struct {
-	shortURLs map[string]*entity.ShortURL
+	shortURLs map[string]*shortURLEntity.ShortURL
+	users     map[int]*userEntity.User
 }
 
 func New() *MemoryDB {
 	return &MemoryDB{
-		shortURLs: make(map[string]*entity.ShortURL),
+		shortURLs: make(map[string]*shortURLEntity.ShortURL),
+		users:     make(map[int]*userEntity.User),
 	}
 }
 
-func (db *MemoryDB) FindShortURL(_ context.Context, alias string) (*entity.ShortURL, error) {
+func (db *MemoryDB) FindUser(_ context.Context, id int) (*userEntity.User, error) {
+	user, ok := db.users[id]
+	if !ok {
+		return nil, dbErrors.ErrDBRecordNotFound
+	}
+	return user, nil
+}
+
+func (db *MemoryDB) FindUserURLs(_ context.Context, userID int) ([]*shortURLEntity.ShortURL, error) {
+	var urls []*shortURLEntity.ShortURL
+
+	for _, url := range db.shortURLs {
+		if url.UserID == userID {
+			urls = append(urls, url)
+		}
+	}
+
+	return urls, nil
+}
+
+func (db *MemoryDB) SaveUser(_ context.Context) (*userEntity.User, error) {
+	id := len(db.users) + 1
+	user := &userEntity.User{ID: id}
+	db.users[id] = user
+	return user, nil
+}
+
+func (db *MemoryDB) FindShortURL(_ context.Context, alias string) (*shortURLEntity.ShortURL, error) {
 	shortURL, ok := db.shortURLs[alias]
 	if !ok {
 		return nil, dbErrors.ErrDBRecordNotFound
@@ -25,9 +55,9 @@ func (db *MemoryDB) FindShortURL(_ context.Context, alias string) (*entity.Short
 	return shortURL, nil
 }
 
-func (db *MemoryDB) findBySourceURL(_ context.Context, sourceURL string) (*entity.ShortURL, error) {
+func (db *MemoryDB) findShortURLBySourceURL(_ context.Context, sourceURL string) (*shortURLEntity.ShortURL, error) {
 	var (
-		shortURL  *entity.ShortURL
+		shortURL  *shortURLEntity.ShortURL
 		noRecords = true
 	)
 
@@ -46,8 +76,8 @@ func (db *MemoryDB) findBySourceURL(_ context.Context, sourceURL string) (*entit
 	return shortURL, nil
 }
 
-func (db *MemoryDB) SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error) {
-	existRecord, _ := db.findBySourceURL(ctx, shortURL.SourceURL)
+func (db *MemoryDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error) {
+	existRecord, _ := db.findShortURLBySourceURL(ctx, shortURL.SourceURL)
 	if existRecord != nil {
 		return existRecord, dbErrors.ErrDBIsNotUnique
 	}

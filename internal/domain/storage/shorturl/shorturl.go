@@ -7,7 +7,8 @@ import (
 	"errors"
 	"github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
-	storageErrors "github.com/gururuby/shortener/internal/domain/storage/shorturl/errors"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/gururuby/shortener/pkg/generator"
 )
@@ -23,22 +24,22 @@ type Generator interface {
 	Alias() string
 }
 
-type Storage struct {
+type ShortURLStorage struct {
 	gen Generator
 	db  DB
 }
 
-func Setup(db DB, cfg *config.Config) *Storage {
-	return &Storage{gen: generator.New(cfg.App.AliasLength), db: db}
+func Setup(db DB, cfg *config.Config) *ShortURLStorage {
+	return &ShortURLStorage{gen: generator.New(cfg.App.AliasLength), db: db}
 }
 
-func (storage *Storage) FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error) {
-	return storage.db.FindShortURL(ctx, alias)
+func (s *ShortURLStorage) FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error) {
+	return s.db.FindShortURL(ctx, alias)
 }
 
-func (storage *Storage) Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error) {
-	shortURL := entity.NewShortURL(storage.gen, sourceURL)
-	res, err := storage.db.SaveShortURL(ctx, shortURL)
+func (s *ShortURLStorage) SaveShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (*entity.ShortURL, error) {
+	shortURL := entity.NewShortURL(s.gen, user, sourceURL)
+	res, err := s.db.SaveShortURL(ctx, shortURL)
 	if err != nil {
 		if errors.Is(err, dbErrors.ErrDBIsNotUnique) {
 			return res, storageErrors.ErrStorageRecordIsNotUnique
@@ -47,6 +48,6 @@ func (storage *Storage) Save(ctx context.Context, sourceURL string) (*entity.Sho
 	return res, err
 }
 
-func (storage *Storage) IsDBReady(ctx context.Context) error {
-	return storage.db.Ping(ctx)
+func (s *ShortURLStorage) IsDBReady(ctx context.Context) error {
+	return s.db.Ping(ctx)
 }
