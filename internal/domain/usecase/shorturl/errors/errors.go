@@ -8,4 +8,5 @@ var (
 	ErrShortURLInvalidSourceURL  = errors.New("invalid source URL, please specify valid URL")
 	ErrShortURLEmptyAlias        = errors.New("empty alias, please specify alias")
 	ErrShortURLSourceURLNotFound = errors.New("source URL not found")
+	ErrShortURLDeleted           = errors.New("short URL was deleted")
 )

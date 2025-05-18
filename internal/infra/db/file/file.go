@@ -24,6 +24,7 @@ type fileDTO struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
+	IsDeleted   bool   `json:"is_deleted"`
 }
 
 func New(filePath string) (*FileDB, error) {
@@ -71,6 +72,7 @@ func toFileDTO(shortURL *shortURLEntity.ShortURL) *fileDTO {
 		UUID:        shortURL.UUID,
 		ShortURL:    shortURL.Alias,
 		OriginalURL: shortURL.SourceURL,
+		IsDeleted:   shortURL.IsDeleted,
 	}
 }
 
@@ -80,6 +82,7 @@ func toShortURL(dto *fileDTO) *shortURLEntity.ShortURL {
 		UUID:      dto.UUID,
 		Alias:     dto.ShortURL,
 		SourceURL: dto.OriginalURL,
+		IsDeleted: dto.IsDeleted,
 	}
 }
 
@@ -173,6 +176,10 @@ func (db *FileDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.Sho
 	}
 
 	return shortURL, nil
+}
+
+func (db *FileDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+	return nil
 }
 
 func (db *FileDB) Ping(_ context.Context) error {

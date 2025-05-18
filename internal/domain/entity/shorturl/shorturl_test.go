@@ -21,6 +21,7 @@ func Test_NewShortURL_OK(t *testing.T) {
 
 		assert.Equal(t, got.SourceURL, sourceURL)
 		assert.Equal(t, got.UserID, 1)
+		assert.Equal(t, got.IsDeleted, false)
 		assert.Equal(t, "UUID", got.UUID)
 		assert.Equal(t, "alias", got.Alias)
 	})

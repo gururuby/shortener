@@ -24,13 +24,14 @@ import (
 var migrations embed.FS
 
 const (
-	findShortURLQuery            = `SELECT original_url, uuid FROM urls WHERE urls.alias = $1`
+	findShortURLQuery            = `SELECT original_url, uuid, is_deleted FROM urls WHERE urls.alias = $1`
 	findUserQuery                = `SELECT id FROM users WHERE users.id = $1`
 	findUserURLsQuery            = `SELECT alias, original_url FROM urls WHERE urls.user_id = $1`
 	findShortURLBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
 	saveShortURLQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
 	saveShortURLQueryWithUser    = `INSERT INTO urls (alias, original_url, user_id) VALUES ($1, $2, $3)`
 	saveUserQuery                = `INSERT INTO users DEFAULT VALUES RETURNING id`
+	markURLsAsDeletedQuery       = "UPDATE urls SET is_deleted = true WHERE user_id = $1 AND alias = ANY($2)"
 )
 
 type PGDBPool interface {
@@ -154,7 +155,7 @@ func (db *PGDB) SaveUser(ctx context.Context) (*userEntity.User, error) {
 
 func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*shortURLEntity.ShortURL, error) {
 	shortURL := shortURLEntity.ShortURL{Alias: alias}
-	err := db.pool.QueryRow(ctx, findShortURLQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID)
+	err := db.pool.QueryRow(ctx, findShortURLQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID, &shortURL.IsDeleted)
 
 	if err != nil {
 		logger.Log.Error(err.Error())
@@ -196,6 +197,11 @@ func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.Short
 	}
 
 	return nil, err
+}
+
+func (db *PGDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+	_, err := db.pool.Exec(ctx, markURLsAsDeletedQuery, userID, aliases)
+	return err
 }
 
 func (db *PGDB) findShortURLBySourceURL(ctx context.Context, sourceURL string) (*shortURLEntity.ShortURL, error) {

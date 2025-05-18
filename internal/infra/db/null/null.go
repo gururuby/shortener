@@ -34,6 +34,10 @@ func (db *NullDB) SaveShortURL(_ context.Context, shortURL *shortURLEntity.Short
 	return shortURL, nil
 }
 
+func (db *NullDB) MarkURLAsDeleted(_ context.Context, _ int, _ []string) error {
+	return nil
+}
+
 func (db *NullDB) Ping(_ context.Context) error {
 	return nil
 }

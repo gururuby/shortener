@@ -148,6 +148,10 @@ func (h *handler) FindShortURL() http.HandlerFunc {
 		result, err := h.urlUC.FindShortURL(r.Context(), r.URL.Path)
 
 		if err != nil {
+			if errors.Is(err, ucErrors.ErrShortURLDeleted) {
+				http.Error(w, err.Error(), http.StatusGone)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return
 		}

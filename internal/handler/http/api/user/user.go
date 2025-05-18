@@ -9,22 +9,26 @@ import (
 	"fmt"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	"github.com/gururuby/shortener/internal/domain/usecase/user"
+	handlerErrors "github.com/gururuby/shortener/internal/handler/http/api/user/errors"
 	"net/http"
 	"time"
 )
 
 const (
-	authCookieName     = "Authorization"
-	getUserURLsTimeout = time.Second * 30
-	getUserURLsPath    = "/api/user/urls"
+	authCookieName    = "Authorization"
+	getURLsTimeout    = time.Second * 30
+	deleteURLsTimeout = time.Second * 30
+	URLsPath          = "/api/user/urls"
 )
 
 type Router interface {
 	Get(path string, h http.HandlerFunc)
+	Delete(path string, h http.HandlerFunc)
 }
 
 type UserUseCase interface {
 	GetURLs(ctx context.Context, user *userEntity.User) ([]*usecase.UserShortURL, error)
+	DeleteURLs(ctx context.Context, user *userEntity.User, aliases []string)
 	Authenticate(ctx context.Context, token string) (*userEntity.User, error)
 	Register(ctx context.Context) (*userEntity.User, error)
 }
@@ -41,10 +45,11 @@ type errorResponse struct {
 
 func Register(router Router, userUC UserUseCase) {
 	h := handler{router: router, userUC: userUC}
-	h.router.Get(getUserURLsPath, h.GetUserURLs())
+	h.router.Get(URLsPath, h.GetURLs())
+	h.router.Delete(URLsPath, h.DeleteURLs())
 }
 
-func (h *handler) GetUserURLs() http.HandlerFunc {
+func (h *handler) GetURLs() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var (
 			err        error
@@ -55,7 +60,7 @@ func (h *handler) GetUserURLs() http.HandlerFunc {
 			userURLs   []*usecase.UserShortURL
 		)
 
-		ctx, cancel := context.WithTimeout(r.Context(), getUserURLsTimeout)
+		ctx, cancel := context.WithTimeout(r.Context(), getURLsTimeout)
 		defer cancel()
 
 		w.Header().Set("Content-Type", "application/json")
@@ -103,6 +108,55 @@ func (h *handler) GetUserURLs() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
+	}
+}
+
+func (h *handler) DeleteURLs() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var (
+			err     error
+			errRes  errorResponse
+			user    *userEntity.User
+			aliases []string
+		)
+
+		ctx, cancel := context.WithTimeout(r.Context(), deleteURLsTimeout)
+		defer cancel()
+
+		w.Header().Set("Content-Type", "application/json")
+
+		if r.Method != http.MethodDelete {
+			errRes.Error = fmt.Sprintf("HTTP method %s is not allowed", r.Method)
+			errRes.StatusCode = http.StatusMethodNotAllowed
+			returnErrResponse(errRes, w)
+			return
+		}
+
+		user, err = h.authUser(ctx, r, w)
+
+		if err != nil {
+			errRes.Error = err.Error()
+			errRes.StatusCode = http.StatusUnprocessableEntity
+			returnErrResponse(errRes, w)
+			return
+		}
+
+		if err = json.NewDecoder(r.Body).Decode(&aliases); err != nil {
+			errRes.Error = err.Error()
+			errRes.StatusCode = http.StatusBadRequest
+			returnErrResponse(errRes, w)
+			return
+		}
+
+		if len(aliases) == 0 {
+			errRes.Error = handlerErrors.ErrHandlerNoAliasesForDelete.Error()
+			errRes.StatusCode = http.StatusBadRequest
+			returnErrResponse(errRes, w)
+			return
+		}
+
+		h.userUC.DeleteURLs(ctx, user, aliases)
+		w.WriteHeader(http.StatusAccepted)
 	}
 }
 

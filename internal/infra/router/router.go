@@ -9,6 +9,7 @@ import (
 type Router interface {
 	Post(path string, h http.HandlerFunc)
 	Get(path string, h http.HandlerFunc)
+	Delete(path string, h http.HandlerFunc)
 	ServeHTTP(writer http.ResponseWriter, request *http.Request)
 }
 

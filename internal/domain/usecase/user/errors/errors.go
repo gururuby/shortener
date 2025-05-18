@@ -8,4 +8,5 @@ var (
 	ErrUserCannotSave         = errors.New("cannot save user")
 	ErrUserCannotRegister     = errors.New("cannot register user")
 	ErrUserStorageNotWorking  = errors.New("user storage is not working")
+	ErrUserNoURLsForDeleting  = errors.New("no urls for deleting")
 )

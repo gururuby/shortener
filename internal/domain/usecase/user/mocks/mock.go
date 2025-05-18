@@ -72,6 +72,20 @@ func (mr *MockUserStorageMockRecorder) FindUser(ctx, userID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUser", reflect.TypeOf((*MockUserStorage)(nil).FindUser), ctx, userID)
 }
 
+// MarkURLAsDeleted mocks base method.
+func (m *MockUserStorage) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkURLAsDeleted", ctx, userID, aliases)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkURLAsDeleted indicates an expected call of MarkURLAsDeleted.
+func (mr *MockUserStorageMockRecorder) MarkURLAsDeleted(ctx, userID, aliases any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkURLAsDeleted", reflect.TypeOf((*MockUserStorage)(nil).MarkURLAsDeleted), ctx, userID, aliases)
+}
+
 // SaveUser mocks base method.
 func (m *MockUserStorage) SaveUser(ctx context.Context) (*entity0.User, error) {
 	m.ctrl.T.Helper()

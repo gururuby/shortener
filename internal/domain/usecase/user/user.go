@@ -9,12 +9,14 @@ import (
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/user/errors"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
+	"github.com/gururuby/shortener/internal/infra/logger"
 )
 
 type UserStorage interface {
 	FindUser(ctx context.Context, userID int) (*userEntity.User, error)
 	FindURLs(ctx context.Context, userID int) ([]*shortURLEntity.ShortURL, error)
 	SaveUser(ctx context.Context) (*userEntity.User, error)
+	MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error
 }
 
 type Authenticator interface {
@@ -118,4 +120,11 @@ func (u *UserUseCase) GetURLs(ctx context.Context, user *userEntity.User) ([]*Us
 	}
 
 	return userURLs, nil
+}
+
+func (u *UserUseCase) DeleteURLs(ctx context.Context, user *userEntity.User, aliases []string) {
+	err := u.storage.MarkURLAsDeleted(ctx, user.ID, aliases)
+	if err != nil {
+		logger.Log.Error(err.Error())
+	}
 }

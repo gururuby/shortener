@@ -69,6 +69,10 @@ func (u *ShortURLUseCase) FindShortURL(ctx context.Context, alias string) (strin
 		return "", ucErrors.ErrShortURLSourceURLNotFound
 	}
 
+	if res.IsDeleted {
+		return "", ucErrors.ErrShortURLDeleted
+	}
+
 	return res.SourceURL, nil
 }
 

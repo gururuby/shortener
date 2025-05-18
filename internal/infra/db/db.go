@@ -17,6 +17,7 @@ type DB interface {
 	SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error)
 	FindUser(ctx context.Context, id int) (*userEntity.User, error)
 	FindUserURLs(ctx context.Context, id int) ([]*shortURLEntity.ShortURL, error)
+	MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error
 	SaveUser(ctx context.Context) (*userEntity.User, error)
 	Ping(ctx context.Context) error
 }

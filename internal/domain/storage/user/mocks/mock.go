@@ -72,6 +72,20 @@ func (mr *MockDBMockRecorder) FindUserURLs(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserURLs", reflect.TypeOf((*MockDB)(nil).FindUserURLs), ctx, id)
 }
 
+// MarkURLAsDeleted mocks base method.
+func (m *MockDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MarkURLAsDeleted", ctx, userID, aliases)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// MarkURLAsDeleted indicates an expected call of MarkURLAsDeleted.
+func (mr *MockDBMockRecorder) MarkURLAsDeleted(ctx, userID, aliases any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkURLAsDeleted", reflect.TypeOf((*MockDB)(nil).MarkURLAsDeleted), ctx, userID, aliases)
+}
+
 // SaveUser mocks base method.
 func (m *MockDB) SaveUser(ctx context.Context) (*entity0.User, error) {
 	m.ctrl.T.Helper()

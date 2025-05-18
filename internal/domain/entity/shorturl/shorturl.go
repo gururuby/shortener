@@ -14,6 +14,7 @@ type ShortURL struct {
 	UUID      string
 	SourceURL string
 	Alias     string
+	IsDeleted bool
 }
 
 type BatchShortURLInput struct {

@@ -248,6 +248,22 @@ func Test_FindShortURLErrors(t *testing.T) {
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
+		{
+			name: "when short url was deleted",
+			useCaseRes: useCaseResult{
+				res: "",
+				err: ucErrors.ErrShortURLDeleted,
+			},
+			request: request{
+				method: http.MethodGet,
+				path:   "/alias3",
+			},
+			response: response{
+				code:        http.StatusGone,
+				body:        "short URL was deleted\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
 	}
 
 	for _, tt := range tests {

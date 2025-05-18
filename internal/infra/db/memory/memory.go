@@ -55,6 +55,10 @@ func (db *MemoryDB) FindShortURL(_ context.Context, alias string) (*shortURLEnti
 	return shortURL, nil
 }
 
+func (db *MemoryDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+	return nil
+}
+
 func (db *MemoryDB) findShortURLBySourceURL(_ context.Context, sourceURL string) (*shortURLEntity.ShortURL, error) {
 	var (
 		shortURL  *shortURLEntity.ShortURL

@@ -33,6 +33,7 @@ type UserStorage interface {
 	FindUser(ctx context.Context, userID int) (*userEntity.User, error)
 	FindURLs(ctx context.Context, userID int) ([]*entity.ShortURL, error)
 	SaveUser(ctx context.Context) (*userEntity.User, error)
+	MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error
 }
 
 type Router interface {

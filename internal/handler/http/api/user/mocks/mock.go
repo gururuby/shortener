@@ -57,6 +57,18 @@ func (mr *MockUserUseCaseMockRecorder) Authenticate(ctx, token any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Authenticate", reflect.TypeOf((*MockUserUseCase)(nil).Authenticate), ctx, token)
 }
 
+// DeleteURLs mocks base method.
+func (m *MockUserUseCase) DeleteURLs(ctx context.Context, user *entity.User, aliases []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "DeleteURLs", ctx, user, aliases)
+}
+
+// DeleteURLs indicates an expected call of DeleteURLs.
+func (mr *MockUserUseCaseMockRecorder) DeleteURLs(ctx, user, aliases any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteURLs", reflect.TypeOf((*MockUserUseCase)(nil).DeleteURLs), ctx, user, aliases)
+}
+
 // GetURLs mocks base method.
 func (m *MockUserUseCase) GetURLs(ctx context.Context, user *entity.User) ([]*usecase.UserShortURL, error) {
 	m.ctrl.T.Helper()
