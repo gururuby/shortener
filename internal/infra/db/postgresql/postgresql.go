@@ -150,7 +150,7 @@ func (db *PGDB) SaveUser(ctx context.Context) (*userEntity.User, error) {
 		return nil, dbErrors.ErrDBQuery
 	}
 
-	return &user, err
+	return &user, nil
 }
 
 func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*shortURLEntity.ShortURL, error) {
@@ -211,11 +211,10 @@ func (db *PGDB) findShortURLBySourceURL(ctx context.Context, sourceURL string) (
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, dbErrors.ErrDBRecordNotFound
-		} else {
-			logger.Log.Error(err.Error())
-			return nil, dbErrors.ErrDBQuery
 		}
 
+		logger.Log.Error(err.Error())
+		return nil, dbErrors.ErrDBQuery
 	}
 
 	return &shortURL, nil

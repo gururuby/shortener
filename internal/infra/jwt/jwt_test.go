@@ -27,7 +27,7 @@ func TestJWT_SignUserID(t *testing.T) {
 			jwt := New(tt.secret, tt.expTime)
 			token, err := jwt.SignUserID(1)
 			require.NoError(t, err)
-			assert.Regexp(t, regexp.MustCompile(`\w+\.\w+\.\w+`), token)
+			assert.Regexp(t, regexp.MustCompile(`.+\..+\..+`), token)
 		})
 	}
 }

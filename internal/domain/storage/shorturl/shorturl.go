@@ -13,7 +13,7 @@ import (
 	"github.com/gururuby/shortener/pkg/generator"
 )
 
-type DB interface {
+type ShortURLDB interface {
 	FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error)
 	SaveShortURL(ctx context.Context, shortURL *entity.ShortURL) (*entity.ShortURL, error)
 	Ping(ctx context.Context) error
@@ -26,10 +26,10 @@ type Generator interface {
 
 type ShortURLStorage struct {
 	gen Generator
-	db  DB
+	db  ShortURLDB
 }
 
-func Setup(db DB, cfg *config.Config) *ShortURLStorage {
+func Setup(db ShortURLDB, cfg *config.Config) *ShortURLStorage {
 	return &ShortURLStorage{gen: generator.New(cfg.App.AliasLength), db: db}
 }
 
