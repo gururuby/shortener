@@ -2,46 +2,47 @@ package usecase
 
 import (
 	"context"
-	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
-	"github.com/gururuby/shortener/internal/domain/entity"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"github.com/gururuby/shortener/internal/domain/usecase/shorturl/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"testing"
 )
 
-func TestFindShortURL_OK(t *testing.T) {
+func Test_FindShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mocks.NewMockDAO(ctrl)
+	storage := mocks.NewMockShortURLStorage(ctrl)
 	ctx := context.Background()
 
-	type daoRes struct {
+	type storageRes struct {
 		shortURL *entity.ShortURL
 	}
 
 	tests := []struct {
-		name   string
-		alias  string
-		daoRes daoRes
-		res    string
+		name       string
+		alias      string
+		storageRes storageRes
+		res        string
 	}{
 		{
-			name:   "when record exist in db",
-			alias:  "alias1",
-			daoRes: daoRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
-			res:    "https://ya.ru",
+			name:       "when record exist in db",
+			alias:      "alias1",
+			storageRes: storageRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
+			res:        "https://ya.ru",
 		},
 		{
-			name:   "when alias passed with '/' prefix",
-			alias:  "/alias1",
-			daoRes: daoRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
-			res:    "https://ya.ru",
+			name:       "when alias passed with '/' prefix",
+			alias:      "/alias1",
+			storageRes: storageRes{shortURL: &entity.ShortURL{SourceURL: "https://ya.ru"}},
+			res:        "https://ya.ru",
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().FindByAlias(ctx, "alias1").Return(tt.daoRes.shortURL, nil).AnyTimes()
-		uc := NewShortURLUseCase(dao, "baseURL")
+		storage.EXPECT().FindShortURL(ctx, "alias1").Return(tt.storageRes.shortURL, nil).AnyTimes()
+		uc := NewShortURLUseCase(storage, "baseURL")
 
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := uc.FindShortURL(ctx, tt.alias)
@@ -51,21 +52,21 @@ func TestFindShortURL_OK(t *testing.T) {
 	}
 }
 
-func TestFindShortURL_Errors(t *testing.T) {
+func Test_FindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mocks.NewMockDAO(ctrl)
+	storage := mocks.NewMockShortURLStorage(ctrl)
 	ctx := context.Background()
 
-	type daoRes struct {
+	type storageRes struct {
 		shortURL *entity.ShortURL
 		err      error
 	}
 
 	tests := []struct {
-		name   string
-		alias  string
-		daoRes daoRes
-		err    error
+		name       string
+		alias      string
+		storageRes storageRes
+		err        error
 	}{
 		{
 			name:  "when passed empty alias",
@@ -73,74 +74,75 @@ func TestFindShortURL_Errors(t *testing.T) {
 			err:   ucErrors.ErrShortURLEmptyAlias,
 		},
 		{
-			name:   "when source URL in db not found",
-			alias:  "alias2",
-			daoRes: daoRes{shortURL: nil},
-			err:    ucErrors.ErrShortURLSourceURLNotFound,
+			name:       "when source URL in db not found",
+			alias:      "alias2",
+			storageRes: storageRes{shortURL: nil},
+			err:        ucErrors.ErrShortURLSourceURLNotFound,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dao.EXPECT().FindByAlias(ctx, tt.alias).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
-			uc := NewShortURLUseCase(dao, "base")
+			storage.EXPECT().FindShortURL(ctx, tt.alias).Return(tt.storageRes.shortURL, tt.storageRes.err).AnyTimes()
+			uc := NewShortURLUseCase(storage, "base")
 			_, err := uc.FindShortURL(ctx, tt.alias)
 			require.ErrorIs(t, tt.err, err)
 		})
 	}
 }
 
-func TestCreateShortURL_OK(t *testing.T) {
+func Test_CreateShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mocks.NewMockDAO(ctrl)
+	storage := mocks.NewMockShortURLStorage(ctrl)
 	ctx := context.Background()
 
-	type daoRes struct {
+	type storageRes struct {
 		shortURL *entity.ShortURL
 	}
 
 	tests := []struct {
-		name      string
-		sourceURL string
-		baseURL   string
-		daoRes    daoRes
-		res       string
+		name       string
+		sourceURL  string
+		user       *userEntity.User
+		baseURL    string
+		storageRes storageRes
+		res        string
 	}{
 		{
-			name:      "when successfully stored short URL",
-			sourceURL: "https://ya.ru",
-			baseURL:   "http://localhost:8888",
-			daoRes:    daoRes{shortURL: &entity.ShortURL{Alias: "alias"}},
-			res:       "http://localhost:8888/alias",
+			name:       "when successfully stored short URL",
+			sourceURL:  "https://ya.ru",
+			baseURL:    "http://localhost:8888",
+			storageRes: storageRes{shortURL: &entity.ShortURL{Alias: "alias"}},
+			res:        "http://localhost:8888/alias",
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(ctx, tt.sourceURL).Return(tt.daoRes.shortURL, nil)
-		uc := NewShortURLUseCase(dao, tt.baseURL)
+		storage.EXPECT().SaveShortURL(ctx, nil, tt.sourceURL).Return(tt.storageRes.shortURL, nil)
+		uc := NewShortURLUseCase(storage, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := uc.CreateShortURL(ctx, tt.sourceURL)
+			res, err := uc.CreateShortURL(ctx, nil, tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
 		})
 	}
 }
 
-func TestCreateShortURL_Errors(t *testing.T) {
+func Test_CreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mocks.NewMockDAO(ctrl)
+	storage := mocks.NewMockShortURLStorage(ctrl)
 	ctx := context.Background()
 
-	type daoRes struct {
+	type storageRes struct {
 		shortURL *entity.ShortURL
 		err      error
 	}
 
 	tests := []struct {
-		name      string
-		sourceURL string
-		baseURL   string
-		daoRes    daoRes
-		err       error
+		name       string
+		sourceURL  string
+		baseURL    string
+		storageRes storageRes
+		err        error
 	}{
 		{
 			name:    "when passed empty base URL",
@@ -162,27 +164,27 @@ func TestCreateShortURL_Errors(t *testing.T) {
 			name:      "when passed existing source URL",
 			sourceURL: "http://ya.ru",
 			baseURL:   "http://localhost:8888",
-			daoRes: daoRes{
+			storageRes: storageRes{
 				shortURL: &entity.ShortURL{Alias: "alias"},
-				err:      daoErrors.ErrDAORecordIsNotUnique,
+				err:      storageErrors.ErrStorageRecordIsNotUnique,
 			},
 			err: ucErrors.ErrShortURLAlreadyExist,
 		},
 	}
 	for _, tt := range tests {
-		dao.EXPECT().Save(ctx, tt.sourceURL).Return(tt.daoRes.shortURL, tt.daoRes.err).AnyTimes()
-		uc := NewShortURLUseCase(dao, tt.baseURL)
+		storage.EXPECT().SaveShortURL(ctx, nil, tt.sourceURL).Return(tt.storageRes.shortURL, tt.storageRes.err).AnyTimes()
+		uc := NewShortURLUseCase(storage, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := uc.CreateShortURL(ctx, tt.sourceURL)
+			_, err := uc.CreateShortURL(ctx, nil, tt.sourceURL)
 			require.ErrorIs(t, tt.err, err)
 		})
 	}
 }
 
-func TestBatchShortURLs_OK(t *testing.T) {
+func Test_BatchShortURLs_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	dao := mocks.NewMockDAO(ctrl)
+	storage := mocks.NewMockShortURLStorage(ctrl)
 	ctx := context.Background()
 
 	var urls []entity.BatchShortURLInput
@@ -191,8 +193,8 @@ func TestBatchShortURLs_OK(t *testing.T) {
 		entity.BatchShortURLInput{CorrelationID: "2", OriginalURL: "https://ya.com"},
 	)
 
-	dao.EXPECT().Save(ctx, urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
-	dao.EXPECT().Save(ctx, urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
+	storage.EXPECT().SaveShortURL(ctx, nil, urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).Times(1)
+	storage.EXPECT().SaveShortURL(ctx, nil, urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).Times(1)
 
 	tests := []struct {
 		name    string
@@ -211,7 +213,7 @@ func TestBatchShortURLs_OK(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		uc := NewShortURLUseCase(dao, tt.baseURL)
+		uc := NewShortURLUseCase(storage, tt.baseURL)
 
 		t.Run(tt.name, func(t *testing.T) {
 			res := uc.BatchShortURLs(ctx, tt.urls)

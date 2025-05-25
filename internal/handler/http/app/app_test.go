@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/go-chi/chi/v5"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 	"github.com/gururuby/shortener/internal/handler/http/app/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestPingOK(t *testing.T) {
+func Test_Ping_OK(t *testing.T) {
 	var err error
 
 	ctrl := gomock.NewController(t)
@@ -22,12 +22,11 @@ func TestPingOK(t *testing.T) {
 	r := chi.NewRouter()
 	h := handler{router: r, uc: uc}
 
-	request := httptest.NewRequest(http.MethodGet, "/ping", nil)
-
-	uc.EXPECT().PingDB(request.Context()).Return(nil)
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	uc.EXPECT().PingDB(req.Context()).Return(nil)
 
 	w := httptest.NewRecorder()
-	h.PingDB()(w, request)
+	h.PingDB()(w, req)
 
 	resp := w.Result()
 
@@ -42,7 +41,7 @@ func TestPingOK(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestPingErrors(t *testing.T) {
+func Test_Ping_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	uc := mocks.NewMockAppUseCase(ctrl)
 

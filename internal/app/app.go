@@ -3,36 +3,37 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/gururuby/shortener/config"
-	"github.com/gururuby/shortener/internal/domain/dao"
-	"github.com/gururuby/shortener/internal/domain/entity"
-	ucApp "github.com/gururuby/shortener/internal/domain/usecase/app"
-	ucShortURL "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
-	handlerAPI "github.com/gururuby/shortener/internal/handler/http/api"
-	handlerApp "github.com/gururuby/shortener/internal/handler/http/app"
-	handlerShortURL "github.com/gururuby/shortener/internal/handler/http/shorturl"
-	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
-	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
-	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
-	postgresqlDB "github.com/gururuby/shortener/internal/infra/db/postgresql"
+	"github.com/gururuby/shortener/internal/config"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	shortURLStorage "github.com/gururuby/shortener/internal/domain/storage/shorturl"
+	userStorage "github.com/gururuby/shortener/internal/domain/storage/user"
+	appUseCase "github.com/gururuby/shortener/internal/domain/usecase/app"
+	shortURLUseCase "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
+	userUseCase "github.com/gururuby/shortener/internal/domain/usecase/user"
+	apiShortURLHandler "github.com/gururuby/shortener/internal/handler/http/api/shorturl"
+	apiUserHandler "github.com/gururuby/shortener/internal/handler/http/api/user"
+	appHandler "github.com/gururuby/shortener/internal/handler/http/app"
+	shortURLHandler "github.com/gururuby/shortener/internal/handler/http/shorturl"
+	database "github.com/gururuby/shortener/internal/infra/db"
+	"github.com/gururuby/shortener/internal/infra/jwt"
 	"github.com/gururuby/shortener/internal/infra/logger"
-	"github.com/gururuby/shortener/internal/infra/utils/generator"
-	"github.com/gururuby/shortener/internal/middleware"
+	"github.com/gururuby/shortener/internal/infra/router"
 	"log"
 	"net/http"
 )
 
-type DAO interface {
-	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
-	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
+type ShortURLStorage interface {
+	FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error)
+	SaveShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (*entity.ShortURL, error)
 	IsDBReady(ctx context.Context) error
 }
 
-type DB interface {
-	Find(context.Context, string) (*entity.ShortURL, error)
-	Save(context.Context, *entity.ShortURL) (*entity.ShortURL, error)
-	Ping(context.Context) error
+type UserStorage interface {
+	FindUser(ctx context.Context, userID int) (*userEntity.User, error)
+	FindURLs(ctx context.Context, userID int) ([]*entity.ShortURL, error)
+	SaveUser(ctx context.Context) (*userEntity.User, error)
+	MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error
 }
 
 type Router interface {
@@ -40,9 +41,10 @@ type Router interface {
 }
 
 type App struct {
-	Storage DAO
-	Config  *config.Config
-	Router  Router
+	ShortURLSStorage ShortURLStorage
+	UserStorage      UserStorage
+	Config           *config.Config
+	Router           Router
 }
 
 func New(cfg *config.Config) *App {
@@ -50,59 +52,48 @@ func New(cfg *config.Config) *App {
 }
 
 func (a *App) Setup() *App {
-	var setupErr error
-	var storage DAO
-	var db DB
+	var (
+		auth        *jwt.JWT
+		setupErr    error
+		shortURLStg ShortURLStorage
+		userStg     UserStorage
+		db          database.DB
+	)
 
 	ctx := context.Background()
 
-	logger.Initialize(a.Config.App.Env, a.Config.Log.Level)
+	logger.Setup(a.Config.App.Env, a.Config.Log.Level)
 
-	gen := generator.New(a.Config.App.AliasLength)
-
-	db, setupErr = setupDB(ctx, a.Config)
+	db, setupErr = database.Setup(ctx, a.Config)
 	if setupErr != nil {
 		log.Fatalf("cannot setup database: %s", setupErr)
 	}
 
-	storage = dao.New(gen, db)
+	shortURLStg = shortURLStorage.Setup(db, a.Config)
+	userStg = userStorage.Setup(db)
 
-	router := chi.NewRouter()
-	router.Use(middleware.Logging)
-	router.Use(middleware.Compression)
+	r := router.Setup()
 
-	shortURLUseCase := ucShortURL.NewShortURLUseCase(storage, a.Config.App.BaseURL)
-	appUseCase := ucApp.NewAppUseCase(storage)
+	auth = jwt.New(a.Config.Auth.SecretKey, a.Config.Auth.TokenTTL)
+	userUC := userUseCase.NewUserUseCase(auth, userStg, a.Config.App.BaseURL)
 
-	handlerShortURL.Register(router, shortURLUseCase)
-	handlerApp.Register(router, appUseCase)
-	handlerAPI.Register(router, shortURLUseCase)
+	urlUC := shortURLUseCase.NewShortURLUseCase(shortURLStg, a.Config.App.BaseURL)
+	appUC := appUseCase.NewAppUseCase(shortURLStg)
 
-	a.Storage = storage
-	a.Router = router
+	shortURLHandler.Register(r, urlUC, userUC)
+	appHandler.Register(r, appUC)
+	apiShortURLHandler.Register(r, userUC, urlUC)
+	apiUserHandler.Register(r, userUC)
+
+	a.ShortURLSStorage = shortURLStg
+	a.UserStorage = userStg
+	a.Router = r
 
 	return a
 }
 
 func (a *App) Run() {
-	logger.Log.Info(fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address))
+	welcomeMsg := fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address)
+	logger.Log.Info(welcomeMsg)
 	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
-}
-
-func setupDB(ctx context.Context, cfg *config.Config) (db DB, err error) {
-	switch cfg.Database.Type {
-	case "memory":
-		db = memoryDB.New()
-	case "file":
-		if db, err = fileDB.New(cfg.FileStorage.Path); err != nil {
-			log.Fatalf("cannot setup file DB: %s", err)
-		}
-	case "postgresql":
-		if db, err = postgresqlDB.New(ctx, cfg); err != nil {
-			log.Fatalf("cannot setup postgresql DB: %s", err)
-		}
-	default:
-		db = nullDB.New()
-	}
-	return
 }

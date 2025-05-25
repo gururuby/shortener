@@ -6,7 +6,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/gururuby/shortener/config"
+	"github.com/gururuby/shortener/internal/config"
+	entity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	"github.com/gururuby/shortener/internal/infra/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -24,10 +27,11 @@ type (
 	}
 
 	request struct {
-		body    []byte
-		headers headers
-		method  string
-		path    string
+		body      []byte
+		authToken string
+		headers   headers
+		method    string
+		path      string
 	}
 	compressedRequest struct {
 		request
@@ -43,8 +47,16 @@ type (
 	}
 )
 
-func TestAppOkRequests(t *testing.T) {
-	cfg, err := config.New()
+func Test_App_OK(t *testing.T) {
+	var (
+		cfg              *config.Config
+		err              error
+		existingShortURL *entity.ShortURL
+		user             *userEntity.User
+		authToken        string
+	)
+
+	cfg, err = config.New()
 	ctx := context.Background()
 	require.NoError(t, err)
 
@@ -52,8 +64,16 @@ func TestAppOkRequests(t *testing.T) {
 	ts := httptest.NewServer(app.Router)
 	defer ts.Close()
 
+	auth := jwt.New(cfg.Auth.SecretKey, cfg.Auth.TokenTTL)
+
+	user, err = app.UserStorage.SaveUser(ctx)
+	require.NoError(t, err)
+
+	authToken, err = auth.SignUserID(user.ID)
+	require.NoError(t, err)
+
 	sourceURL := "https://ya.ru"
-	existingRecord, _ := app.Storage.Save(ctx, sourceURL)
+	existingShortURL, err = app.ShortURLSStorage.SaveShortURL(ctx, user, sourceURL)
 
 	var tests = []struct {
 		name     string
@@ -121,12 +141,26 @@ func TestAppOkRequests(t *testing.T) {
 			name: "when find ShortURL via http",
 			request: request{
 				method: http.MethodGet,
-				path:   "/" + existingRecord.Alias,
+				path:   "/" + existingShortURL.Alias,
 			},
 			response: response{
 				location: sourceURL,
 				status:   http.StatusOK,
 			},
+		},
+		{
+			name: "when find user URLs via API",
+			request: request{
+				authToken: authToken,
+				method:    http.MethodGet,
+				headers:   headers{contentType: "application/json"},
+				path:      "/api/user/urls",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusOK,
+			},
+			want: `[{"short_url":"http://localhost:8080/\w{5}","original_url:"https://ya.ru"}]`,
 		},
 	}
 	for _, tt := range tests {
@@ -147,7 +181,7 @@ func TestAppOkRequests(t *testing.T) {
 	}
 }
 
-func TestAppCompressRequests(t *testing.T) {
+func Test_App_Compress_OK(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
@@ -236,7 +270,7 @@ func TestAppCompressRequests(t *testing.T) {
 	}
 }
 
-func TestAppErrorRequests(t *testing.T) {
+func Test_App_Errors(t *testing.T) {
 	cfg, err := config.New()
 	require.NoError(t, err)
 
@@ -298,10 +332,12 @@ func TestAppErrorRequests(t *testing.T) {
 }
 
 func testRequest(t *testing.T, ts *httptest.Server, r request) (*http.Response, string) {
-	var err error
-	var body []byte
-	var req *http.Request
-	var resp *http.Response
+	var (
+		err  error
+		body []byte
+		req  *http.Request
+		resp *http.Response
+	)
 
 	req, err = http.NewRequest(r.method, ts.URL+r.path, bytes.NewReader(r.body))
 
@@ -309,6 +345,11 @@ func testRequest(t *testing.T, ts *httptest.Server, r request) (*http.Response, 
 	req.Header.Set("Content-Type", r.headers.contentType)
 	req.Header.Set("Content-Encoding", r.headers.contentEncoding)
 	req.Header.Set("Accept-Encoding", r.headers.acceptEncoding)
+
+	if r.authToken != "" {
+		authCookie := http.Cookie{Name: "Authorization", Value: r.authToken}
+		req.AddCookie(&authCookie)
+	}
 
 	require.NoError(t, err)
 

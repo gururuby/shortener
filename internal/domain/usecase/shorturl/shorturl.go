@@ -1,36 +1,37 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DAO
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . ShortURLStorage
 
 package usecase
 
 import (
 	"context"
 	"errors"
-	daoErrors "github.com/gururuby/shortener/internal/domain/dao/errors"
-	"github.com/gururuby/shortener/internal/domain/entity"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
-	"github.com/gururuby/shortener/internal/infra/utils/validator"
+	"github.com/gururuby/shortener/pkg/validator"
 	"strings"
 )
 
-type DAO interface {
-	FindByAlias(ctx context.Context, alias string) (*entity.ShortURL, error)
-	Save(ctx context.Context, sourceURL string) (*entity.ShortURL, error)
+type ShortURLStorage interface {
+	FindShortURL(ctx context.Context, alias string) (*entity.ShortURL, error)
+	SaveShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (*entity.ShortURL, error)
 }
 
 type ShortURLUseCase struct {
 	baseURL string
-	dao     DAO
+	storage ShortURLStorage
 }
 
-func NewShortURLUseCase(dao DAO, baseURL string) *ShortURLUseCase {
+func NewShortURLUseCase(storage ShortURLStorage, baseURL string) *ShortURLUseCase {
 	return &ShortURLUseCase{
-		dao:     dao,
+		storage: storage,
 		baseURL: baseURL,
 	}
 }
 
-func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, sourceURL string) (string, error) {
+func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (string, error) {
 	if validator.IsInvalidURL(u.baseURL) {
 		return "", ucErrors.ErrShortURLInvalidBaseURL
 	}
@@ -39,10 +40,10 @@ func (u *ShortURLUseCase) CreateShortURL(ctx context.Context, sourceURL string) 
 		return "", ucErrors.ErrShortURLInvalidSourceURL
 	}
 
-	result, err := u.dao.Save(ctx, sourceURL)
+	result, err := u.storage.SaveShortURL(ctx, user, sourceURL)
 
 	if err != nil {
-		if errors.Is(err, daoErrors.ErrDAORecordIsNotUnique) {
+		if errors.Is(err, storageErrors.ErrStorageRecordIsNotUnique) {
 			return u.baseURL + "/" + result.Alias, ucErrors.ErrShortURLAlreadyExist
 		} else {
 			return "", err
@@ -59,13 +60,17 @@ func (u *ShortURLUseCase) FindShortURL(ctx context.Context, alias string) (strin
 		return "", ucErrors.ErrShortURLEmptyAlias
 	}
 
-	res, err := u.dao.FindByAlias(ctx, alias)
+	res, err := u.storage.FindShortURL(ctx, alias)
 	if err != nil {
 		return "", err
 	}
 
 	if res == nil {
 		return "", ucErrors.ErrShortURLSourceURLNotFound
+	}
+
+	if res.IsDeleted {
+		return "", ucErrors.ErrShortURLDeleted
 	}
 
 	return res.SourceURL, nil
@@ -75,7 +80,7 @@ func (u *ShortURLUseCase) BatchShortURLs(ctx context.Context, urls []entity.Batc
 	var res []entity.BatchShortURLOutput
 
 	for _, url := range urls {
-		shortURL, err := u.CreateShortURL(ctx, url.OriginalURL)
+		shortURL, err := u.CreateShortURL(ctx, nil, url.OriginalURL)
 		if err != nil {
 			logger.Log.Info(err.Error())
 			continue

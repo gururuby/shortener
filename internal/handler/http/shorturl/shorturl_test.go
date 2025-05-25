@@ -2,7 +2,8 @@ package handler
 
 import (
 	"github.com/go-chi/chi/v5"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/errors"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"github.com/gururuby/shortener/internal/handler/http/shorturl/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,18 +15,24 @@ import (
 	"testing"
 )
 
-func TestCreateShortURLOK(t *testing.T) {
+func Test_CreateShortURL_OK(t *testing.T) {
 	var err error
 	var body []byte
 
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
+
+	user := &userEntity.User{ID: 1}
+	userUC := mocks.NewMockUserUseCase(ctrl)
 
 	r := chi.NewRouter()
-	h := handler{router: r, uc: uc}
+	h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("http://example.com"))
-	uc.EXPECT().CreateShortURL(req.Context(), "http://example.com").Return("http://localhost:8080/mock_alias", nil).AnyTimes()
+
+	userUC.EXPECT().Register(gomock.Any()).Return(user, nil).AnyTimes()
+	urlUC.EXPECT().CreateShortURL(gomock.Any(), user, "http://example.com").Return("http://localhost:8080/mock_alias", nil).Times(1)
+
 	w := httptest.NewRecorder()
 	h.CreateShortURL()(w, req)
 
@@ -45,9 +52,12 @@ func TestCreateShortURLOK(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", resp.Header.Get("Content-Type"))
 }
 
-func TestCreateShortURLErrors(t *testing.T) {
+func Test_CreateShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
+
+	user := &userEntity.User{ID: 1}
+	userUC := mocks.NewMockUserUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -126,10 +136,12 @@ func TestCreateShortURLErrors(t *testing.T) {
 			var body []byte
 
 			r := chi.NewRouter()
-			h := handler{router: r, uc: uc}
+			h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, strings.NewReader(tt.request.body))
-			uc.EXPECT().CreateShortURL(req.Context(), tt.request.body).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+			userUC.EXPECT().Register(gomock.Any()).Return(user, nil).AnyTimes()
+			urlUC.EXPECT().CreateShortURL(gomock.Any(), user, tt.request.body).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+
 			w := httptest.NewRecorder()
 			h.CreateShortURL()(w, req)
 
@@ -152,17 +164,18 @@ func TestCreateShortURLErrors(t *testing.T) {
 	}
 }
 
-func TestFindShortURLOK(t *testing.T) {
+func Test_FindShortURL_OK(t *testing.T) {
 	var err error
 
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
 
 	r := chi.NewRouter()
-	h := handler{router: r, uc: uc}
+	h := handler{router: r, urlUC: urlUC}
 
 	req := httptest.NewRequest(http.MethodGet, "/some_alias", nil)
-	uc.EXPECT().FindShortURL(req.Context(), "/some_alias").Return("https://ya.ru", nil)
+	urlUC.EXPECT().FindShortURL(req.Context(), "/some_alias").Return("https://ya.ru", nil)
+
 	w := httptest.NewRecorder()
 	h.FindShortURL()(w, req)
 
@@ -181,9 +194,9 @@ func TestFindShortURLOK(t *testing.T) {
 	assert.Equal(t, "https://ya.ru", resp.Header.Get("Location"))
 }
 
-func TestFindShortURLErrors(t *testing.T) {
+func Test_FindShortURLErrors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	uc := mocks.NewMockShortURLUseCase(ctrl)
+	urlUC := mocks.NewMockShortURLUseCase(ctrl)
 
 	type request struct {
 		method string
@@ -235,6 +248,22 @@ func TestFindShortURLErrors(t *testing.T) {
 				contentType: "text/plain; charset=utf-8",
 			},
 		},
+		{
+			name: "when short url was deleted",
+			useCaseRes: useCaseResult{
+				res: "",
+				err: ucErrors.ErrShortURLDeleted,
+			},
+			request: request{
+				method: http.MethodGet,
+				path:   "/alias3",
+			},
+			response: response{
+				code:        http.StatusGone,
+				body:        "short URL was deleted\n",
+				contentType: "text/plain; charset=utf-8",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -243,10 +272,11 @@ func TestFindShortURLErrors(t *testing.T) {
 			var body []byte
 
 			r := chi.NewRouter()
-			h := handler{router: r, uc: uc}
+			h := handler{router: r, urlUC: urlUC}
 
 			req := httptest.NewRequest(tt.request.method, tt.request.path, nil)
-			uc.EXPECT().FindShortURL(req.Context(), tt.request.path).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+			urlUC.EXPECT().FindShortURL(req.Context(), tt.request.path).Return(tt.useCaseRes.res, tt.useCaseRes.err).AnyTimes()
+
 			w := httptest.NewRecorder()
 
 			h.FindShortURL()(w, req)
