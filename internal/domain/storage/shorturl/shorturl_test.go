@@ -88,7 +88,7 @@ func Test_Storage_SaveShortURL_OK(t *testing.T) {
 
 	gen := entityMock.NewMockGenerator(ctrl)
 	gen.EXPECT().UUID().Return("UUID")
-	gen.EXPECT().Alias().Return("alias")
+	gen.EXPECT().Alias().Return("alias", nil)
 
 	storage := ShortURLStorage{gen: gen, db: db}
 
@@ -113,6 +113,43 @@ func Test_Storage_SaveShortURL_OK(t *testing.T) {
 			res, err := storage.SaveShortURL(ctx, nil, tt.sourceURL)
 			require.NoError(t, err)
 			require.Equal(t, tt.res, res)
+		})
+	}
+}
+
+func Test_Storage_SaveShortURL_Errors(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	db := storageMock.NewMockDB(ctrl)
+	ctx := context.Background()
+
+	gen := entityMock.NewMockGenerator(ctrl)
+	gen.EXPECT().UUID().Return("UUID")
+	gen.EXPECT().Alias().Return("alias", nil)
+
+	storage := ShortURLStorage{gen: gen, db: db}
+
+	tests := []struct {
+		name      string
+		sourceURL string
+		res       *entity.ShortURL
+		err       error
+	}{
+		{
+			name:      "when db return non unique record error",
+			sourceURL: "https://ya.ru",
+			res: &entity.ShortURL{
+				UUID:      "UUID",
+				SourceURL: "https://ya.ru",
+				Alias:     "alias",
+			},
+			err: dbErrors.ErrDBRecordNotFound,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db.EXPECT().SaveShortURL(ctx, tt.res).Return(nil, tt.err)
+			_, err := storage.SaveShortURL(ctx, nil, tt.sourceURL)
+			require.Error(t, err)
 		})
 	}
 }

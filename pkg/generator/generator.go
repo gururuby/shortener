@@ -2,6 +2,7 @@ package generator
 
 import (
 	"github.com/google/uuid"
+	"github.com/gururuby/shortener/pkg/generator/errors"
 	"math/rand"
 	"time"
 )
@@ -16,7 +17,7 @@ func New(aliasLength int) *Generator {
 	}
 }
 
-func (g *Generator) Alias() string {
+func (g *Generator) Alias() (string, error) {
 	return generateAlias(g.aliasLength)
 }
 
@@ -24,7 +25,11 @@ func (g *Generator) UUID() string {
 	return uuid.NewString()
 }
 
-func generateAlias(length int) string {
+func generateAlias(length int) (string, error) {
+	if length < 1 {
+		return "", errors.ErrGeneratorEmptyAliasLength
+	}
+
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	chars := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -36,5 +41,5 @@ func generateAlias(length int) string {
 		b[i] = chars[rnd.Intn(len(chars))]
 	}
 
-	return string(b)
+	return string(b), nil
 }

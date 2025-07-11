@@ -6,7 +6,7 @@ import userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 
 type Generator interface {
 	UUID() string
-	Alias() string
+	Alias() (string, error)
 }
 
 type ShortURL struct {
@@ -27,15 +27,19 @@ type BatchShortURLOutput struct {
 	ShortURL      string `json:"short_url"`
 }
 
-func NewShortURL(g Generator, user *userEntity.User, sourceURL string) *ShortURL {
+func NewShortURL(g Generator, user *userEntity.User, sourceURL string) (*ShortURL, error) {
+	alias, err := g.Alias()
+	if err != nil {
+		return nil, err
+	}
 	shortURL := &ShortURL{
 		UUID:      g.UUID(),
-		Alias:     g.Alias(),
+		Alias:     alias,
 		SourceURL: sourceURL,
 	}
 
 	if user != nil {
 		shortURL.UserID = user.ID
 	}
-	return shortURL
+	return shortURL, err
 }

@@ -21,7 +21,7 @@ type ShortURLDB interface {
 
 type Generator interface {
 	UUID() string
-	Alias() string
+	Alias() (string, error)
 }
 
 type ShortURLStorage struct {
@@ -38,7 +38,10 @@ func (s *ShortURLStorage) FindShortURL(ctx context.Context, alias string) (*enti
 }
 
 func (s *ShortURLStorage) SaveShortURL(ctx context.Context, user *userEntity.User, sourceURL string) (*entity.ShortURL, error) {
-	shortURL := entity.NewShortURL(s.gen, user, sourceURL)
+	shortURL, err := entity.NewShortURL(s.gen, user, sourceURL)
+	if err != nil {
+		return nil, err
+	}
 	res, err := s.db.SaveShortURL(ctx, shortURL)
 	if err != nil {
 		if errors.Is(err, dbErrors.ErrDBIsNotUnique) {
