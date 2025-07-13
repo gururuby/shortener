@@ -1,3 +1,13 @@
+/*
+Package logger provides centralized logging functionality for the application.
+
+It features:
+- Thread-safe singleton logger initialization
+- Environment-specific logging configurations
+- Configurable log levels
+- Structured logging via zap logger
+- Production and development logging presets
+*/
 package logger
 
 import (
@@ -6,8 +16,18 @@ import (
 	"sync"
 )
 
+// Log is the global logger instance that should be used throughout the application.
+// It is initialized by calling Setup() and provides structured logging methods.
 var Log *zap.Logger
 
+// Setup initializes the global logger with the specified environment and log level.
+// This function is safe for concurrent use and will only initialize the logger once.
+//
+// Parameters:
+//   - appENV: Application environment ("production" or any other value for development)
+//   - logLevel: Desired log level ("debug", "info", "warn", "error")
+//
+// Note: If initialization fails, the function will log the error and exit the program.
 func Setup(appENV, logLevel string) {
 	var initLogger sync.Once
 
@@ -30,6 +50,14 @@ func Setup(appENV, logLevel string) {
 	})
 }
 
+// buildLogLevel converts a string log level to zap's AtomicLevel.
+// This is an internal helper function used during logger setup.
+//
+// Parameters:
+//   - logLevel: String representation of log level
+//
+// Returns:
+//   - zap.AtomicLevel: Configured log level (defaults to InfoLevel for invalid inputs)
 func buildLogLevel(logLevel string) zap.AtomicLevel {
 	var lvl zap.AtomicLevel
 
