@@ -18,7 +18,6 @@ import (
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
-	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/pkg/validator"
 	"strings"
 )
@@ -128,7 +127,6 @@ func (u *ShortURLUseCase) BatchShortURLs(ctx context.Context, urls []entity.Batc
 	for _, url := range urls {
 		shortURL, err := u.CreateShortURL(ctx, nil, url.OriginalURL)
 		if err != nil {
-			logger.Log.Info(err.Error())
 			continue
 		}
 		res = append(res, entity.BatchShortURLOutput{

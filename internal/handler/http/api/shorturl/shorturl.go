@@ -20,9 +20,12 @@ import (
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	apiErrors "github.com/gururuby/shortener/internal/handler/http/api/shorturl/errors"
+	"github.com/json-iterator/go"
 	"net/http"
 	"time"
 )
+
+var jsonIter = jsoniter.ConfigFastest
 
 const (
 	authCookieName        = "Authorization"  // Name of the authentication cookie
@@ -162,7 +165,7 @@ func (h *handler) CreateShortURL() http.HandlerFunc {
 		}
 
 		dto.response.Result = shortURL
-		response, err = json.Marshal(dto.response)
+		response, err = jsonIter.Marshal(dto.response)
 
 		if err != nil {
 			errRes.Error = err.Error()
@@ -220,7 +223,7 @@ func (h *handler) BatchShortURLs() http.HandlerFunc {
 		}
 
 		dto.outputURLs = h.urlUC.BatchShortURLs(ctx, dto.inputURLs)
-		response, err = json.Marshal(dto.outputURLs)
+		response, err = jsonIter.Marshal(dto.outputURLs)
 
 		if err != nil {
 			errRes.Error = err.Error()
@@ -280,7 +283,7 @@ func (h *handler) authUser(ctx context.Context, r *http.Request, w http.Response
 // - w: HTTP response writer
 func returnErrResponse(errResp errorResponse, w http.ResponseWriter) {
 	w.WriteHeader(errResp.StatusCode)
-	response, err := json.Marshal(errResp)
+	response, err := jsonIter.Marshal(errResp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

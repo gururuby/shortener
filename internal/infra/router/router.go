@@ -11,7 +11,6 @@ package router
 
 import (
 	"github.com/go-chi/chi/v5"
-	cmiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/gururuby/shortener/internal/middleware"
 	"net/http"
 )
@@ -45,7 +44,6 @@ func Setup() Router {
 	router := chi.NewRouter()
 	router.Use(middleware.Logging)
 	router.Use(middleware.Compression)
-	router.Mount("/debug", cmiddleware.Profiler())
 
 	return router
 }

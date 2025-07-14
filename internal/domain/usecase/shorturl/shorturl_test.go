@@ -90,6 +90,20 @@ func Test_FindShortURL_Errors(t *testing.T) {
 	}
 }
 
+func Benchmark_FindShortURL(b *testing.B) {
+	ctrl := gomock.NewController(b)
+	storage := mocks.NewMockShortURLStorage(ctrl)
+	ctx := context.Background()
+
+	storage.EXPECT().FindShortURL(ctx, "alias").Return(&entity.ShortURL{}, nil).AnyTimes()
+	uc := NewShortURLUseCase(storage, "baseURL")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = uc.FindShortURL(ctx, "alias")
+	}
+}
+
 func Test_CreateShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockShortURLStorage(ctrl)
@@ -182,6 +196,20 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 	}
 }
 
+func Benchmark_CreateShortURL(b *testing.B) {
+	ctrl := gomock.NewController(b)
+	storage := mocks.NewMockShortURLStorage(ctrl)
+	ctx := context.Background()
+
+	storage.EXPECT().SaveShortURL(ctx, nil, "https://example.com").Return(&entity.ShortURL{}, nil).AnyTimes()
+	uc := NewShortURLUseCase(storage, "baseURL")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = uc.CreateShortURL(ctx, nil, "https://example.com")
+	}
+}
+
 func Test_BatchShortURLs_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	storage := mocks.NewMockShortURLStorage(ctrl)
@@ -219,5 +247,27 @@ func Test_BatchShortURLs_OK(t *testing.T) {
 			res := uc.BatchShortURLs(ctx, tt.urls)
 			require.Equal(t, tt.result, res)
 		})
+	}
+}
+
+func Benchmark_BatchShortURLs(b *testing.B) {
+	ctrl := gomock.NewController(b)
+	storage := mocks.NewMockShortURLStorage(ctrl)
+	ctx := context.Background()
+
+	var urls []entity.BatchShortURLInput
+	urls = append(urls,
+		entity.BatchShortURLInput{CorrelationID: "1", OriginalURL: "https://ya.ru"},
+		entity.BatchShortURLInput{CorrelationID: "2", OriginalURL: "https://ya.com"},
+	)
+
+	storage.EXPECT().SaveShortURL(ctx, nil, urls[0].OriginalURL).Return(&entity.ShortURL{Alias: "alias1"}, nil).AnyTimes()
+	storage.EXPECT().SaveShortURL(ctx, nil, urls[1].OriginalURL).Return(&entity.ShortURL{Alias: "alias2"}, nil).AnyTimes()
+
+	uc := NewShortURLUseCase(storage, "baseURL")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		uc.BatchShortURLs(ctx, urls)
 	}
 }

@@ -23,6 +23,7 @@ import (
 	"time"
 )
 
+// Available constants
 const (
 	authCookieName    = "Authorization"  // Name of the authentication cookie
 	getURLsTimeout    = time.Second * 30 // Timeout for GET URLs operation

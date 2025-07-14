@@ -12,14 +12,16 @@ package db
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
+	"github.com/json-iterator/go"
 	"os"
 	"sync"
 )
+
+var json = jsoniter.ConfigFastest
 
 // FileDB represents a file-based database implementation.
 // It maintains in-memory maps synchronized with a persistent file.
