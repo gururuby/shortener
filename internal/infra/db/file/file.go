@@ -263,7 +263,7 @@ func (db *FileDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.Sho
 // - aliases: URLs to mark as deleted
 // Returns:
 // - error: Always returns nil (not implemented)
-func (db *FileDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+func (db *FileDB) MarkURLAsDeleted(_ context.Context, _ int, _ []string) error {
 	return nil
 }
 

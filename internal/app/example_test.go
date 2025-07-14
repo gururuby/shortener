@@ -153,7 +153,12 @@ func testExampleRequest(ts *httptest.Server, r request) string {
 		panic(err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	body, err = io.ReadAll(resp.Body)
 
