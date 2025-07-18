@@ -1,5 +1,14 @@
 //go:generate mockgen -destination=./mocks/mock.go -package=mocks . UserStorage,Authenticator
 
+/*
+Package usecase implements the business logic for user management operations.
+
+It provides:
+- User authentication and registration
+- User URL management
+- JWT token handling
+- Error handling specific to user operations
+*/
 package usecase
 
 import (
@@ -12,29 +21,67 @@ import (
 	"github.com/gururuby/shortener/internal/infra/logger"
 )
 
+// UserStorage defines the interface for user persistence operations.
 type UserStorage interface {
+	// FindUser retrieves a user by ID.
+	// Returns:
+	// - *userEntity.User: The found user
+	// - error: If user is not found or database operation fails
 	FindUser(ctx context.Context, userID int) (*userEntity.User, error)
+
+	// FindURLs retrieves all short URLs belonging to a user.
+	// Returns:
+	// - []*shortURLEntity.ShortURL: List of user's short URLs
+	// - error: If database operation fails
 	FindURLs(ctx context.Context, userID int) ([]*shortURLEntity.ShortURL, error)
+
+	// SaveUser creates and persists a new user.
+	// Returns:
+	// - *userEntity.User: The created user
+	// - error: If database operation fails
 	SaveUser(ctx context.Context) (*userEntity.User, error)
+
+	// MarkURLAsDeleted soft-deletes the specified URLs for a user.
+	// Returns:
+	// - error: If database operation fails or URLs don't belong to user
 	MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error
 }
 
+// Authenticator defines the interface for user authentication operations.
 type Authenticator interface {
+	// SignUserID generates a JWT token for the given user ID.
+	// Returns:
+	// - string: The generated token
+	// - error: If token generation fails
 	SignUserID(userID int) (string, error)
+
+	// ReadUserID extracts the user ID from a JWT token.
+	// Returns:
+	// - int: The user ID from the token
+	// - error: If token is invalid or expired
 	ReadUserID(tokenString string) (int, error)
 }
 
+// UserUseCase implements the business logic for user management.
 type UserUseCase struct {
-	auth    Authenticator
-	storage UserStorage
-	baseURL string
+	auth    Authenticator // JWT authentication service
+	storage UserStorage   // User persistence layer
+	baseURL string        // Base URL for shortened links
 }
 
+// UserShortURL represents a shortened URL with its original URL.
 type UserShortURL struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`    // The shortened URL
+	OriginalURL string `json:"original_url"` // The original long URL
 }
 
+// NewUserUseCase creates a new instance of UserUseCase.
+// Parameters:
+// - auth: JWT authentication service
+// - storage: User persistence layer
+// - baseURL: Base URL for shortened links
+// Returns:
+// - *UserUseCase: Initialized user use case
 func NewUserUseCase(auth Authenticator, storage UserStorage, baseURL string) *UserUseCase {
 	return &UserUseCase{
 		auth:    auth,
@@ -43,6 +90,13 @@ func NewUserUseCase(auth Authenticator, storage UserStorage, baseURL string) *Us
 	}
 }
 
+// Authenticate verifies a user's JWT token and retrieves their information.
+// Parameters:
+// - ctx: Context for cancellation and timeouts
+// - token: JWT token to authenticate
+// Returns:
+// - *userEntity.User: Authenticated user with token
+// - error: Specific authentication errors
 func (u *UserUseCase) Authenticate(ctx context.Context, token string) (*userEntity.User, error) {
 	var (
 		userID int
@@ -62,6 +116,12 @@ func (u *UserUseCase) Authenticate(ctx context.Context, token string) (*userEnti
 	return user, nil
 }
 
+// Register creates a new user account and generates an authentication token.
+// Parameters:
+// - ctx: Context for cancellation and timeouts
+// Returns:
+// - *userEntity.User: Newly created user with auth token
+// - error: Specific registration errors
 func (u *UserUseCase) Register(ctx context.Context) (*userEntity.User, error) {
 	var (
 		user  *userEntity.User
@@ -82,6 +142,12 @@ func (u *UserUseCase) Register(ctx context.Context) (*userEntity.User, error) {
 	return user, nil
 }
 
+// SaveUser persists a new user record.
+// Parameters:
+// - ctx: Context for cancellation and timeouts
+// Returns:
+// - *userEntity.User: Saved user entity
+// - error: If save operation fails
 func (u *UserUseCase) SaveUser(ctx context.Context) (*userEntity.User, error) {
 	user, err := u.storage.SaveUser(ctx)
 	if err != nil {
@@ -90,6 +156,13 @@ func (u *UserUseCase) SaveUser(ctx context.Context) (*userEntity.User, error) {
 	return user, nil
 }
 
+// FindUser retrieves a user by their ID.
+// Parameters:
+// - ctx: Context for cancellation and timeouts
+// - id: User ID to look up
+// Returns:
+// - *userEntity.User: Found user entity
+// - error: Specific user lookup errors
 func (u *UserUseCase) FindUser(ctx context.Context, id int) (*userEntity.User, error) {
 	user, err := u.storage.FindUser(ctx, id)
 	if err != nil {
@@ -101,6 +174,13 @@ func (u *UserUseCase) FindUser(ctx context.Context, id int) (*userEntity.User, e
 	return user, nil
 }
 
+// GetURLs retrieves all shortened URLs belonging to a user.
+// Parameters:
+// - ctx: Context for cancellation and timeouts
+// - user: The user whose URLs to retrieve
+// Returns:
+// - []*UserShortURL: List of user's URLs with full shortened URLs
+// - error: If retrieval operation fails
 func (u *UserUseCase) GetURLs(ctx context.Context, user *userEntity.User) ([]*UserShortURL, error) {
 	var (
 		shortURLs []*shortURLEntity.ShortURL
@@ -122,6 +202,12 @@ func (u *UserUseCase) GetURLs(ctx context.Context, user *userEntity.User) ([]*Us
 	return userURLs, nil
 }
 
+// DeleteURLs marks the specified URLs as deleted for a user.
+// Parameters:
+// - ctx: Context for cancellation and timeouts
+// - user: The user owning the URLs
+// - aliases: List of URL aliases to delete
+// Note: Errors are logged but not returned to allow batch operations to continue
 func (u *UserUseCase) DeleteURLs(ctx context.Context, user *userEntity.User, aliases []string) {
 	err := u.storage.MarkURLAsDeleted(ctx, user.ID, aliases)
 	if err != nil {

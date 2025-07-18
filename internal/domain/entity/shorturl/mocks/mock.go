@@ -40,11 +40,12 @@ func (m *MockGenerator) EXPECT() *MockGeneratorMockRecorder {
 }
 
 // Alias mocks base method.
-func (m *MockGenerator) Alias() string {
+func (m *MockGenerator) Alias() (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Alias")
 	ret0, _ := ret[0].(string)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Alias indicates an expected call of Alias.

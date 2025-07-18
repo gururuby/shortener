@@ -1,5 +1,15 @@
 //go:generate mockgen -destination=./mocks/mock.go -package=mocks . PGDBPool
 
+/*
+Package db implements a PostgreSQL database backend for the URL shortener service.
+
+It provides:
+- Persistent storage using PostgreSQL
+- Database migrations using Goose
+- Connection pooling for performance
+- Comprehensive error handling
+- Support for all required database operations
+*/
 package db
 
 import (
@@ -34,17 +44,32 @@ const (
 	markURLsAsDeletedQuery       = "UPDATE urls SET is_deleted = true WHERE user_id = $1 AND alias = ANY($2)"
 )
 
+// PGDBPool defines the interface for PostgreSQL database operations.
+// This interface allows for mocking and testing database interactions.
 type PGDBPool interface {
+	// Exec executes a SQL command and returns the command tag
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	// Query executes a SQL query and returns the rows
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	// QueryRow executes a SQL query expected to return at most one row
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	// Ping checks if the database is available
 	Ping(ctx context.Context) error
 }
 
+// PGDB implements the database interface using PostgreSQL as the backend.
 type PGDB struct {
-	pool PGDBPool
+	pool PGDBPool // Connection pool for database operations
 }
 
+// New creates and initializes a new PGDB instance.
+// It establishes a connection pool and runs database migrations.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - cfg: Database configuration
+// Returns:
+// - *PGDB: Initialized database instance
+// - error: If connection or migration fails
 func New(ctx context.Context, cfg *config.Config) (*PGDB, error) {
 	var (
 		err  error
@@ -75,6 +100,13 @@ func New(ctx context.Context, cfg *config.Config) (*PGDB, error) {
 	}, nil
 }
 
+// newDBPool creates a new PostgreSQL connection pool with retry logic.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - cfg: Database configuration
+// Returns:
+// - *pgxpool.Pool: Connection pool
+// - error: If connection fails after retries
 func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) {
 	var (
 		pool   *pgxpool.Pool
@@ -100,6 +132,13 @@ func newDBPool(ctx context.Context, cfg config.Database) (*pgxpool.Pool, error) 
 	return pool, err
 }
 
+// FindUser retrieves a user by ID from the database.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - id: User ID to find
+// Returns:
+// - *userEntity.User: Found user
+// - error: dbErrors.ErrDBRecordNotFound if user doesn't exist
 func (db *PGDB) FindUser(ctx context.Context, id int) (*userEntity.User, error) {
 	user := userEntity.User{ID: id}
 	err := db.pool.QueryRow(ctx, findUserQuery, id).Scan(&user.ID)
@@ -116,6 +155,13 @@ func (db *PGDB) FindUser(ctx context.Context, id int) (*userEntity.User, error) 
 	return &user, nil
 }
 
+// FindUserURLs retrieves all short URLs belonging to a user.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - userID: Owner's user ID
+// Returns:
+// - []*shortURLEntity.ShortURL: List of user's URLs
+// - error: If query fails
 func (db *PGDB) FindUserURLs(ctx context.Context, userID int) ([]*shortURLEntity.ShortURL, error) {
 	var (
 		alias       string
@@ -142,6 +188,12 @@ func (db *PGDB) FindUserURLs(ctx context.Context, userID int) ([]*shortURLEntity
 	return urls, nil
 }
 
+// SaveUser creates a new user in the database.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// Returns:
+// - *userEntity.User: Created user with ID
+// - error: If insert fails
 func (db *PGDB) SaveUser(ctx context.Context) (*userEntity.User, error) {
 	user := userEntity.User{}
 	err := db.pool.QueryRow(ctx, saveUserQuery).Scan(&user.ID)
@@ -153,6 +205,13 @@ func (db *PGDB) SaveUser(ctx context.Context) (*userEntity.User, error) {
 	return &user, nil
 }
 
+// FindShortURL retrieves a short URL by its alias.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - alias: Short URL identifier
+// Returns:
+// - *shortURLEntity.ShortURL: Found short URL
+// - error: If URL doesn't exist or query fails
 func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*shortURLEntity.ShortURL, error) {
 	shortURL := shortURLEntity.ShortURL{Alias: alias}
 	err := db.pool.QueryRow(ctx, findShortURLQuery, alias).Scan(&shortURL.SourceURL, &shortURL.UUID, &shortURL.IsDeleted)
@@ -165,6 +224,13 @@ func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*shortURLEntity
 	return &shortURL, nil
 }
 
+// SaveShortURL stores a new short URL in the database.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - shortURL: URL to save
+// Returns:
+// - *shortURLEntity.ShortURL: Saved URL
+// - error: If URL already exists or insert fails
 func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error) {
 	var (
 		err              error
@@ -199,11 +265,25 @@ func (db *PGDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.Short
 	return nil, err
 }
 
+// MarkURLAsDeleted marks the specified URLs as deleted for a user.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - userID: Owner's user ID
+// - aliases: URLs to mark as deleted
+// Returns:
+// - error: If update fails
 func (db *PGDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
 	_, err := db.pool.Exec(ctx, markURLsAsDeletedQuery, userID, aliases)
 	return err
 }
 
+// findShortURLBySourceURL looks up a short URL by its original URL.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// - sourceURL: Original long URL
+// Returns:
+// - *shortURLEntity.ShortURL: Found short URL
+// - error: If URL doesn't exist or query fails
 func (db *PGDB) findShortURLBySourceURL(ctx context.Context, sourceURL string) (*shortURLEntity.ShortURL, error) {
 	shortURL := shortURLEntity.ShortURL{SourceURL: sourceURL}
 	err := db.pool.QueryRow(ctx, findShortURLBySourceURLQuery, sourceURL).Scan(&shortURL.Alias)
@@ -220,6 +300,11 @@ func (db *PGDB) findShortURLBySourceURL(ctx context.Context, sourceURL string) (
 	return &shortURL, nil
 }
 
+// Ping checks if the database is available.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// Returns:
+// - error: If database is unreachable
 func (db *PGDB) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
 }
