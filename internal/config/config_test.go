@@ -8,8 +8,8 @@ import (
 
 func TestConfig(t *testing.T) {
 	tests := []struct {
-		name    string
 		want    *Config
+		name    string
 		wantErr bool
 	}{
 		{

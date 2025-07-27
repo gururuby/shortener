@@ -26,9 +26,9 @@ func Test_Storage_FindShortURL_OK(t *testing.T) {
 	}
 
 	tests := []struct {
+		dbRecord dbRecord
 		name     string
 		alias    string
-		dbRecord dbRecord
 	}{
 		{
 			name:     "when find short URL in db by alias",
@@ -61,9 +61,9 @@ func Test_Storage_FindShortURL_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
+		result result
 		name   string
 		alias  string
-		result result
 	}{
 		{
 			name:   "when cannot find record in db by alias",
@@ -93,9 +93,9 @@ func Test_Storage_SaveShortURL_OK(t *testing.T) {
 	storage := ShortURLStorage{gen: gen, db: db}
 
 	tests := []struct {
+		res       *entity.ShortURL
 		name      string
 		sourceURL string
-		res       *entity.ShortURL
 	}{
 		{
 			name:      "when save short URL in db",
@@ -129,10 +129,10 @@ func Test_Storage_SaveShortURL_Errors(t *testing.T) {
 	storage := ShortURLStorage{gen: gen, db: db}
 
 	tests := []struct {
+		err       error
+		res       *entity.ShortURL
 		name      string
 		sourceURL string
-		res       *entity.ShortURL
-		err       error
 	}{
 		{
 			name:      "when db return non unique record error",

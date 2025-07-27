@@ -13,9 +13,9 @@ func TestGenerator_UUID(t *testing.T) {
 		aliasLength int
 	}
 	tests := []struct {
+		want   *regexp.Regexp
 		name   string
 		fields fields
-		want   *regexp.Regexp
 	}{
 		{
 			name:   "generate UUID",
@@ -38,9 +38,9 @@ func TestGenerator_Alias(t *testing.T) {
 		aliasLength int
 	}
 	tests := []struct {
+		want   *regexp.Regexp
 		name   string
 		fields fields
-		want   *regexp.Regexp
 	}{
 		{
 			name:   "generate alias",
@@ -74,9 +74,9 @@ func TestGenerator_Alias_Errors(t *testing.T) {
 		aliasLength int
 	}
 	tests := []struct {
+		want   error
 		name   string
 		fields fields
-		want   error
 	}{
 		{
 			name:   "when alias length is zero",

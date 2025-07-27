@@ -8,8 +8,8 @@ func TestIsInvalidURL(t *testing.T) {
 	tests := []struct {
 		name    string
 		url     string
-		want    bool
 		comment string
+		want    bool
 	}{
 		{
 			name:    "valid http URL",

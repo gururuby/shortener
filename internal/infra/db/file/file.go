@@ -26,20 +26,20 @@ var json = jsoniter.ConfigFastest
 // FileDB represents a file-based database implementation.
 // It maintains in-memory maps synchronized with a persistent file.
 type FileDB struct {
-	mutex     sync.RWMutex                        // Mutex for thread-safe operations
-	file      *os.File                            // Underlying file storage
-	shortURLs map[string]*shortURLEntity.ShortURL // In-memory short URL cache
-	users     map[int]*userEntity.User            // In-memory user cache
+	file      *os.File
+	shortURLs map[string]*shortURLEntity.ShortURL
+	users     map[int]*userEntity.User
+	mutex     sync.RWMutex
 }
 
 // fileDTO is the data transfer object for file storage.
 // It defines the JSON structure for persisted short URLs.
 type fileDTO struct {
-	UserID      int    `json:"user_id"`      // Owner's user ID
-	UUID        string `json:"uuid"`         // Unique identifier
-	ShortURL    string `json:"short_url"`    // Short URL alias
-	OriginalURL string `json:"original_url"` // Original long URL
-	IsDeleted   bool   `json:"is_deleted"`   // Soft delete flag
+	UUID        string `json:"uuid"`
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+	UserID      int    `json:"user_id"`
+	IsDeleted   bool   `json:"is_deleted"`
 }
 
 // New creates and initializes a new FileDB instance.

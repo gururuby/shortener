@@ -29,11 +29,11 @@ type Generator interface {
 // ShortURL represents a shortened URL entity in the system.
 // It tracks the relationship between original URLs and their shortened versions.
 type ShortURL struct {
-	UserID    int    // ID of the user who created the short URL (0 for anonymous)
-	UUID      string // Unique identifier for the short URL record
-	SourceURL string // Original URL that was shortened
-	Alias     string // Short identifier used in the shortened URL
-	IsDeleted bool   // Soft-delete flag
+	UUID      string
+	SourceURL string
+	Alias     string
+	UserID    int
+	IsDeleted bool
 }
 
 // BatchShortURLInput represents the input structure for batch URL shortening operations.

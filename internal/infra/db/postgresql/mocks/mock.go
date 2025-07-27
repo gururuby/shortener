@@ -20,9 +20,9 @@ import (
 
 // MockPGDBPool is a mock of PGDBPool interface.
 type MockPGDBPool struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockPGDBPoolMockRecorder
-	isgomock struct{}
 }
 
 // MockPGDBPoolMockRecorder is the mock recorder for MockPGDBPool.

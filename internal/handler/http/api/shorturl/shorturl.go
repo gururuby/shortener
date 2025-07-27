@@ -72,8 +72,8 @@ type handler struct {
 
 // errorResponse represents an API error response.
 type errorResponse struct {
-	StatusCode int    // HTTP status code
-	Error      string // Error message
+	Error      string
+	StatusCode int
 }
 
 type (

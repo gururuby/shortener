@@ -20,9 +20,9 @@ import (
 
 // MockUserUseCase is a mock of UserUseCase interface.
 type MockUserUseCase struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockUserUseCaseMockRecorder
-	isgomock struct{}
 }
 
 // MockUserUseCaseMockRecorder is the mock recorder for MockUserUseCase.
@@ -74,9 +74,9 @@ func (mr *MockUserUseCaseMockRecorder) Register(ctx any) *gomock.Call {
 
 // MockShortURLUseCase is a mock of ShortURLUseCase interface.
 type MockShortURLUseCase struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockShortURLUseCaseMockRecorder
-	isgomock struct{}
 }
 
 // MockShortURLUseCaseMockRecorder is the mock recorder for MockShortURLUseCase.

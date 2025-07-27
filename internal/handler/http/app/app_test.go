@@ -51,9 +51,9 @@ func Test_Ping_Errors(t *testing.T) {
 	}
 
 	type response struct {
-		code        int
 		body        string
 		contentType string
+		code        int
 	}
 
 	type useCaseResult struct {
@@ -61,10 +61,10 @@ func Test_Ping_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		request    request
-		response   response
 		useCaseRes useCaseResult
+		request    request
+		name       string
+		response   response
 	}{
 		{
 			name: "when use case returns some error",

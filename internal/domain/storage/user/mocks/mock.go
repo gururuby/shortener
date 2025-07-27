@@ -20,9 +20,9 @@ import (
 
 // MockDB is a mock of DB interface.
 type MockDB struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockDBMockRecorder
-	isgomock struct{}
 }
 
 // MockDBMockRecorder is the mock recorder for MockDB.

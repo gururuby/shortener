@@ -5,6 +5,6 @@ package entity
 // User represents an application user in the system.
 // It contains the basic authentication information and identifier.
 type User struct {
-	ID        int    // Unique identifier for the user
-	AuthToken string // Authentication token used for session management
+	AuthToken string
+	ID        int
 }

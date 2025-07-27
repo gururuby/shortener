@@ -23,9 +23,9 @@ func Test_Storage_FindUser_OK(t *testing.T) {
 	}
 
 	tests := []struct {
+		dbRecord dbRecord
 		name     string
 		ID       int
-		dbRecord dbRecord
 	}{
 		{
 			name:     "when find user in db by ID",
@@ -57,9 +57,9 @@ func Test_Storage_FindUser_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
+		result result
 		name   string
 		ID     int
-		result result
 	}{
 		{
 			name:   "when cannot find user in db by ID",
@@ -86,8 +86,8 @@ func Test_Storage_SaveUser_OK(t *testing.T) {
 	storage := UserStorage{db: db}
 
 	tests := []struct {
-		name string
 		res  *entity.User
+		name string
 	}{
 		{
 			name: "when save user in db",

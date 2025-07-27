@@ -20,9 +20,9 @@ import (
 
 // MockShortURLStorage is a mock of ShortURLStorage interface.
 type MockShortURLStorage struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockShortURLStorageMockRecorder
-	isgomock struct{}
 }
 
 // MockShortURLStorageMockRecorder is the mock recorder for MockShortURLStorage.

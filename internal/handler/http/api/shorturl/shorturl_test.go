@@ -29,8 +29,8 @@ type (
 	}
 
 	ucOutput struct {
-		res string
 		err error
+		res string
 	}
 )
 
@@ -47,11 +47,11 @@ func Test_CreateShortURL_OK(t *testing.T) {
 	h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
 	var tests = []struct {
-		name     string
-		request  request
-		response response
-		ucInput  string
 		ucOutput ucOutput
+		request  request
+		name     string
+		ucInput  string
+		response response
 	}{
 		{
 			name: "when success create short url",
@@ -110,11 +110,11 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 	h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
 	var tests = []struct {
-		name     string
-		request  request
-		response response
-		ucInput  string
 		ucOutput ucOutput
+		request  request
+		name     string
+		ucInput  string
+		response response
 	}{
 		{
 			name: "when incorrect http method was used",
