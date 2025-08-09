@@ -17,9 +17,11 @@ for better maintainability.
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -83,7 +85,10 @@ type Log struct {
 	Level string `env:"LOG_LEVEL" envDefault:"info"` // Logging level (debug/info/warn/error)
 }
 
-var cfg Config // Global configuration instance
+var (
+	cfg         Config // Global configuration instance
+	jsonCfgName string // Name of JSON config file
+)
 
 // New loads and initializes application configuration from multiple sources:
 // 1. .env file (if present)
@@ -95,6 +100,13 @@ var cfg Config // Global configuration instance
 // - error: Any error that occurred during loading
 func New() (*Config, error) {
 	var err error
+
+	if jsonCfgName != "" {
+		err = loadConfigFromJSON(jsonCfgName, cfg)
+		if err != nil {
+			log.Printf("Error loading config from %s file", jsonCfgName)
+		}
+	}
 
 	// Try loading .env file (ignore if not found)
 	err = godotenv.Load(".env")
@@ -124,6 +136,20 @@ func New() (*Config, error) {
 	return &cfg, nil
 }
 
+// loadConfigFromJSON reads and parses JSON configuration file into Config struct
+func loadConfigFromJSON(path string, cfg Config) error {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(file, &cfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // AppInfo generates a formatted string with application information.
 // Format: "<Name> v<Version> (<Env>)"
 func (c *Config) AppInfo() string {
@@ -134,6 +160,7 @@ func (c *Config) AppInfo() string {
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address (host:port)")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
+	flag.StringVar(&jsonCfgName, "c", "config.json", "Name of config file")
 	flag.StringVar(&cfg.Database.DSN, "d", "", "Database connection string (DSN)")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "Path to file storage")
 	flag.BoolVar(&cfg.Server.HTTPS.Enabled, "s", true, "Run HTTPS server")

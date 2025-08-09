@@ -1,0 +1,33 @@
+{
+  "server": {
+    "address": ":8080",
+    "https": {
+      "enabled": true,
+      "certFile": "/path/to/cert.pem",
+      "keyFile": "/path/to/key.pem"
+    }
+  },
+  "app": {
+    "env": "production",
+    "name": "URL Shortener",
+    "version": "1.0.0",
+    "baseURL": "https://example.com",
+    "aliasLength": 6
+  },
+  "auth": {
+    "secretKey": "secure-secret-key",
+    "tokenTTL": "72h"
+  },
+  "database": {
+    "type": "postgres",
+    "dsn": "host=localhost user=postgres dbname=shortener sslmode=disable",
+    "connTryDelay": "10s",
+    "connTryTimes": 3
+  },
+  "fileStorage": {
+    "path": "/data/storage.json"
+  },
+  "log": {
+    "level": "debug"
+  }
+}
