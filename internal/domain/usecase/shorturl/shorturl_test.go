@@ -63,10 +63,10 @@ func Test_FindShortURL_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		alias      string
 		storageRes storageRes
 		err        error
+		name       string
+		alias      string
 	}{
 		{
 			name:  "when passed empty alias",
@@ -152,11 +152,11 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
+		storageRes storageRes
+		err        error
 		name       string
 		sourceURL  string
 		baseURL    string
-		storageRes storageRes
-		err        error
 	}{
 		{
 			name:    "when passed empty base URL",

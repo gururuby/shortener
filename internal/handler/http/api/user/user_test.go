@@ -17,10 +17,10 @@ import (
 
 type (
 	request struct {
+		body        *bytes.Buffer
 		contentType string
 		method      string
 		path        string
-		body        *bytes.Buffer
 	}
 
 	response struct {
@@ -29,8 +29,8 @@ type (
 	}
 
 	ucOutput struct {
-		res []*usecase.UserShortURL
 		err error
+		res []*usecase.UserShortURL
 	}
 )
 
@@ -50,11 +50,11 @@ func Test_GetURLs_OK(t *testing.T) {
 	h := handler{router: r, userUC: userUC}
 
 	var tests = []struct {
-		name     string
 		request  request
-		response response
-		ucInput  *userEntity.User
 		ucOutput ucOutput
+		ucInput  *userEntity.User
+		name     string
+		response response
 	}{
 		{
 			name: "when success receive user urls",

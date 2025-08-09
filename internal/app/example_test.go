@@ -47,8 +47,8 @@ func Example() {
 
 	var examples = []struct {
 		name    string
-		request request
 		match   string
+		request request
 	}{
 		{
 			name: "when create ShortURL via http",

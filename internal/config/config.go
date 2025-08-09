@@ -28,27 +28,27 @@ import (
 // Config represents the complete application configuration.
 // It aggregates all configuration subsections.
 type Config struct {
-	App         // Application metadata and settings
-	Auth        // Authentication settings
-	Server      // HTTP server settings
-	Database    // Database connection settings
-	FileStorage // File storage settings
-	Log         // Logging configuration
+	Server
+	FileStorage
+	Log
+	App
+	Auth
+	Database
 }
 
 // App contains application metadata and general settings.
 type App struct {
-	AliasLength int    `env:"APP_ALIAS_LENGTH" envDefault:"5"`  // Length of generated URL aliases
-	Env         string `env:"APP_ENV" envDefault:"development"` // Runtime environment (development/production/etc.)
-	Name        string `env:"APP_NAME" envDefault:"Shortener"`  // Application name
-	Version     string `env:"APP_VERSION" envDefault:"0.0.1"`   // Application version
-	BaseURL     string `env:"APP_BASE_URL"`                     // Base URL for shortened links
+	Env         string `env:"APP_ENV" envDefault:"development"`
+	Name        string `env:"APP_NAME" envDefault:"Shortener"`
+	Version     string `env:"APP_VERSION" envDefault:"0.0.1"`
+	BaseURL     string `env:"APP_BASE_URL"`
+	AliasLength int    `env:"APP_ALIAS_LENGTH" envDefault:"5"`
 }
 
 // Auth contains JWT authentication settings.
 type Auth struct {
-	TokenTTL  time.Duration `env:"AUTH_TOKEN_TTL" envDefault:"24h"`     // JWT token time-to-live
-	SecretKey string        `env:"AUTH_SECRET_KEY" envDefault:"secret"` // JWT signing key
+	SecretKey string        `env:"AUTH_SECRET_KEY" envDefault:"secret"`
+	TokenTTL  time.Duration `env:"AUTH_TOKEN_TTL" envDefault:"24h"`
 }
 
 // Server contains HTTP server configuration.
@@ -58,10 +58,10 @@ type Server struct {
 
 // Database contains database connection settings.
 type Database struct {
-	ConnTryDelay time.Duration `env:"DATABASE_CONN_TRY_DELAY" envDefault:"5s"` // Delay between connection attempts
-	ConnTryTimes int           `env:"DATABASE_CONN_TRY_TIMES" envDefault:"5"`  // Number of connection attempts
-	Type         string        `env:"DATABASE_TYPE"`                           // Database type (memory/file/postgresql)
-	DSN          string        `env:"DATABASE_DSN"`                            // Database connection string
+	Type         string        `env:"DATABASE_TYPE"`
+	DSN          string        `env:"DATABASE_DSN"`
+	ConnTryDelay time.Duration `env:"DATABASE_CONN_TRY_DELAY" envDefault:"5s"`
+	ConnTryTimes int           `env:"DATABASE_CONN_TRY_TIMES" envDefault:"5"`
 }
 
 // FileStorage contains settings for file-based storage.

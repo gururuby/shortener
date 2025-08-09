@@ -66,21 +66,21 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 	}
 
 	type response struct {
-		code        int
 		body        string
 		contentType string
+		code        int
 	}
 
 	type useCaseResult struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {
-		name       string
 		request    request
-		response   response
 		useCaseRes useCaseResult
+		name       string
+		response   response
 	}{
 		{
 			name: "when use case returns some error",
@@ -204,21 +204,21 @@ func Test_FindShortURLErrors(t *testing.T) {
 	}
 
 	type response struct {
-		code        int
 		body        string
 		contentType string
+		code        int
 	}
 
 	type useCaseResult struct {
-		res string
 		err error
+		res string
 	}
 
 	tests := []struct {
-		name       string
-		request    request
-		response   response
 		useCaseRes useCaseResult
+		request    request
+		name       string
+		response   response
 	}{
 		{
 			name: "when use case returns some error",

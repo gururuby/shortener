@@ -59,8 +59,8 @@ type handler struct {
 
 // errorResponse represents an API error response.
 type errorResponse struct {
-	StatusCode int    // HTTP status code
-	Error      string // Error description
+	Error      string
+	StatusCode int
 }
 
 // Register sets up the user-related API routes and their handlers.

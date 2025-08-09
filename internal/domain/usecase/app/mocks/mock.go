@@ -18,9 +18,9 @@ import (
 
 // MockStorage is a mock of Storage interface.
 type MockStorage struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockStorageMockRecorder
-	isgomock struct{}
 }
 
 // MockStorageMockRecorder is the mock recorder for MockStorage.

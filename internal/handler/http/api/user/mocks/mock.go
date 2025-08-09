@@ -20,9 +20,9 @@ import (
 
 // MockUserUseCase is a mock of UserUseCase interface.
 type MockUserUseCase struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockUserUseCaseMockRecorder
-	isgomock struct{}
 }
 
 // MockUserUseCaseMockRecorder is the mock recorder for MockUserUseCase.

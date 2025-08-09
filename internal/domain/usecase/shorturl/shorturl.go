@@ -39,8 +39,8 @@ type ShortURLStorage interface {
 
 // ShortURLUseCase implements the business logic for URL shortening operations.
 type ShortURLUseCase struct {
-	baseURL string          // Base URL for shortened links
-	storage ShortURLStorage // Storage layer interface
+	storage ShortURLStorage
+	baseURL string
 }
 
 // NewShortURLUseCase creates a new instance of ShortURLUseCase.

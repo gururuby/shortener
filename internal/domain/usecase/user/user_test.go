@@ -25,11 +25,11 @@ func Test_Authenticate_OK(t *testing.T) {
 	}
 
 	tests := []struct {
+		storageRes storageRes
+		res        *userEntity.User
 		name       string
 		token      string
 		ID         int
-		storageRes storageRes
-		res        *userEntity.User
 	}{
 		{
 			name:       "when read ID from token and record exist in db",
@@ -59,8 +59,8 @@ func Test_Authenticate_Errors(t *testing.T) {
 
 	type (
 		authRes struct {
-			userID int
 			err    error
+			userID int
 		}
 		storageRes struct {
 			user *userEntity.User
@@ -69,11 +69,11 @@ func Test_Authenticate_Errors(t *testing.T) {
 	)
 
 	tests := []struct {
-		name       string
-		token      string
 		authRes    authRes
 		storageRes storageRes
 		res        error
+		name       string
+		token      string
 	}{
 		{
 			name:       "when authenticator return some error",
@@ -110,8 +110,8 @@ func Test_Register_OK(t *testing.T) {
 
 	type (
 		authRes struct {
-			token string
 			err   error
+			token string
 		}
 		storageRes struct {
 			user *userEntity.User
@@ -120,11 +120,11 @@ func Test_Register_OK(t *testing.T) {
 	)
 
 	tests := []struct {
-		name       string
-		token      string
 		authRes    authRes
 		storageRes storageRes
 		res        *userEntity.User
+		name       string
+		token      string
 	}{
 		{
 			name:       "when successfully create user and sign user ID",
@@ -154,8 +154,8 @@ func Test_Register_Errors(t *testing.T) {
 
 	type (
 		authRes struct {
-			token string
 			err   error
+			token string
 		}
 		storageRes struct {
 			user *userEntity.User
@@ -164,11 +164,11 @@ func Test_Register_Errors(t *testing.T) {
 	)
 
 	tests := []struct {
-		name       string
-		token      string
 		authRes    authRes
 		storageRes storageRes
 		res        error
+		name       string
+		token      string
 	}{
 		{
 			name:       "when cannot create user in db",
@@ -209,10 +209,10 @@ func Test_FindUser_OK(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		ID         int
 		storageRes storageRes
 		res        *userEntity.User
+		name       string
+		ID         int
 	}{
 		{
 			name:       "when record exist in db",
@@ -245,10 +245,10 @@ func Test_FindUser_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		ID         int
 		storageRes storageRes
 		err        error
+		name       string
+		ID         int
 	}{
 		{
 			name:       "when passed unknown ID",
@@ -278,9 +278,9 @@ func Test_SaveUser_OK(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
 		storageRes storageRes
 		res        *userEntity.User
+		name       string
 	}{
 		{
 			name:       "when successfully stored user",
@@ -312,9 +312,9 @@ func Test_SaveUser_Errors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
 		storageRes storageRes
 		err        error
+		name       string
 	}{
 		{
 			name: "when something wrong with DB",
@@ -352,8 +352,8 @@ func Test_GetURLs_OK(t *testing.T) {
 	})
 
 	type storageRes struct {
-		urls []*shortURLEntity.ShortURL
 		err  error
+		urls []*shortURLEntity.ShortURL
 	}
 
 	tests := []struct {
@@ -387,20 +387,20 @@ func Test_GetURLs_Errors(t *testing.T) {
 
 	type (
 		storageRes struct {
-			urls []*shortURLEntity.ShortURL
 			err  error
+			urls []*shortURLEntity.ShortURL
 		}
 	)
 
 	tests := []struct {
+		res        error
 		name       string
 		token      string
 		storageRes storageRes
-		res        error
 	}{
 		{
 			name:       "when something went wrong with storage",
-			storageRes: storageRes{nil, storageErrors.ErrStorageIsNotReadyDB},
+			storageRes: storageRes{urls: nil, err: storageErrors.ErrStorageIsNotReadyDB},
 			res:        ucErrors.ErrUserStorageNotWorking,
 		},
 	}

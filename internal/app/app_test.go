@@ -27,23 +27,23 @@ type (
 	}
 
 	request struct {
-		body      []byte
-		authToken string
 		headers   headers
+		authToken string
 		method    string
 		path      string
+		body      []byte
 	}
 	compressedRequest struct {
-		request
 		body    *bytes.Buffer
 		headers headers
 		method  string
 		path    string
+		request
 	}
 	response struct {
 		headers  headers
-		status   int
 		location string
+		status   int
 	}
 )
 
@@ -77,9 +77,9 @@ func Test_App_OK(t *testing.T) {
 
 	var tests = []struct {
 		name     string
+		want     string
 		request  request
 		response response
-		want     string
 	}{
 		{
 			name: "when create ShortURL via http",
@@ -191,10 +191,10 @@ func Test_App_Compress_OK(t *testing.T) {
 	defer ts.Close()
 
 	var tests = []struct {
-		name     string
 		request  compressedRequest
-		response response
+		name     string
 		want     string
+		response response
 	}{
 		{
 			name: "when send gzipped text/html",
@@ -281,9 +281,9 @@ func Test_App_Errors(t *testing.T) {
 
 	var tests = []struct {
 		name     string
+		want     string
 		request  request
 		response response
-		want     string
 	}{
 		{
 			name: "when cannot find ShortURL",
@@ -314,7 +314,7 @@ func Test_App_Errors(t *testing.T) {
 				headers: headers{contentType: "application/json"},
 				status:  http.StatusUnprocessableEntity,
 			},
-			want: `{"StatusCode":422,"Error":"invalid source URL, please specify valid URL"}`,
+			want: `{"Error":"invalid source URL, please specify valid URL","StatusCode":422}`,
 		},
 	}
 	for _, tt := range tests {

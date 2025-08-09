@@ -20,9 +20,9 @@ import (
 
 // MockUserStorage is a mock of UserStorage interface.
 type MockUserStorage struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockUserStorageMockRecorder
-	isgomock struct{}
 }
 
 // MockUserStorageMockRecorder is the mock recorder for MockUserStorage.
@@ -103,9 +103,9 @@ func (mr *MockUserStorageMockRecorder) SaveUser(ctx any) *gomock.Call {
 
 // MockAuthenticator is a mock of Authenticator interface.
 type MockAuthenticator struct {
+	isgomock struct{}
 	ctrl     *gomock.Controller
 	recorder *MockAuthenticatorMockRecorder
-	isgomock struct{}
 }
 
 // MockAuthenticatorMockRecorder is the mock recorder for MockAuthenticator.

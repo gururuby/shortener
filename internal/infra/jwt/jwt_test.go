@@ -66,12 +66,12 @@ func TestJWT_ReadUserID_OK(t *testing.T) {
 
 func TestJWT_ReadUserID_Errors(t *testing.T) {
 	var tests = []struct {
+		err     error
 		name    string
 		token   string
 		secret  string
 		expTime time.Duration
 		userID  int
-		err     error
 	}{
 		{
 			name:    "when passed incorrect token",
