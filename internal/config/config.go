@@ -52,9 +52,17 @@ type Auth struct {
 	TokenTTL  time.Duration `env:"AUTH_TOKEN_TTL" envDefault:"24h"`
 }
 
+// HTTPS contains HTTPS server configuration
+type HTTPS struct {
+	Enabled  bool   `env:"ENABLE_HTTPS" envDefault:"false"`
+	CertFile string `env:"HTTPS_CERT_FILE"`
+	KeyFile  string `env:"HTTPS_KEY_FILE"`
+}
+
 // Server contains HTTP server configuration.
 type Server struct {
 	Address string `env:"SERVER_ADDRESS"` // Server listen address (host:port)
+	HTTPS
 }
 
 // Database contains database connection settings.
@@ -128,4 +136,5 @@ func init() {
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
 	flag.StringVar(&cfg.Database.DSN, "d", "", "Database connection string (DSN)")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "Path to file storage")
+	flag.BoolVar(&cfg.Server.HTTPS.Enabled, "s", true, "Run HTTPS server")
 }

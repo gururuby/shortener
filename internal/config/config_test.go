@@ -29,6 +29,9 @@ func TestConfig(t *testing.T) {
 				},
 				Server: Server{
 					Address: "localhost:8080",
+					HTTPS: HTTPS{
+						Enabled: false,
+					},
 				},
 				Database: Database{
 					Type:         "file",

@@ -132,11 +132,38 @@ func (a *App) Setup() *App {
 	return a
 }
 
-// Run starts the HTTP server and begins listening for requests.
-// This is a blocking call that runs until the server is shut down.
-// Server address is taken from the application configuration.
+// Run starts the web server and begins listening for incoming requests.
+// It supports both HTTP and HTTPS modes based on the application configuration.
+//
+// The server will run in HTTPS mode if Server.HTTPS.Enabled is true and both
+// certificate and key files are properly configured. Otherwise, it falls back
+// to HTTP mode.
+//
+// This is a blocking call that runs until the server is shut down either
+// gracefully or due to an error. In case of server failure, it logs the error
+// and terminates the application with os.Exit(1).
+//
+// The server address is taken from the application configuration (Server.Address).
+// When HTTPS is enabled, the certificate and key files are read from
+// Server.HTTPS.CertFile and Server.HTTPS.KeyFile respectively.
 func (a *App) Run() {
 	welcomeMsg := fmt.Sprintf("Starting %s server on %s", a.Config.AppInfo(), a.Config.Server.Address)
 	logger.Log.Info(welcomeMsg)
-	log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
+
+	if a.Config.Server.HTTPS.Enabled {
+		// Validate TLS configuration
+		if a.Config.Server.HTTPS.CertFile == "" || a.Config.Server.HTTPS.KeyFile == "" {
+			logger.Log.Fatal("HTTPS is enabled but certificate or key file is not specified")
+			return
+		}
+
+		log.Fatal(http.ListenAndServeTLS(
+			a.Config.Server.Address,
+			a.Config.Server.HTTPS.CertFile,
+			a.Config.Server.HTTPS.KeyFile,
+			a.Router,
+		))
+	} else {
+		log.Fatal(http.ListenAndServe(a.Config.Server.Address, a.Router))
+	}
 }
