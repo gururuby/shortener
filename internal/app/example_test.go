@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/gururuby/shortener/internal/config"
 	entity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	"github.com/gururuby/shortener/internal/infra/jwt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"regexp"
 )
 
 func Example() {

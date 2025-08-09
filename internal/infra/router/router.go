@@ -10,9 +10,10 @@ It features:
 package router
 
 import (
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/gururuby/shortener/internal/middleware"
-	"net/http"
 )
 
 // Router defines the interface for HTTP request routing.

@@ -13,12 +13,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"sync"
+
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/json-iterator/go"
-	"os"
-	"sync"
 )
 
 var json = jsoniter.ConfigFastest

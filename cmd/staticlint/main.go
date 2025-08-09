@@ -138,7 +138,7 @@ func main() {
 		st1001.SCAnalyzer.Analyzer, // Naming style
 	)
 
-	checks = append(checks, noexit.NoExitAnalyzer)
+	checks = append(checks, noexit.Analyzer)
 
 	multichecker.Main(checks...)
 }

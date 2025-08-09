@@ -16,6 +16,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+
 	"github.com/gururuby/shortener/internal/config"
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"

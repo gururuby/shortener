@@ -1,6 +1,12 @@
 package handler
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
@@ -8,11 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 )
 
 func Test_CreateShortURL_OK(t *testing.T) {
@@ -28,10 +29,10 @@ func Test_CreateShortURL_OK(t *testing.T) {
 	r := chi.NewRouter()
 	h := handler{router: r, urlUC: urlUC, userUC: userUC}
 
-	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("http://example.com"))
+	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader("https://example.com"))
 
 	userUC.EXPECT().Register(gomock.Any()).Return(user, nil).AnyTimes()
-	urlUC.EXPECT().CreateShortURL(gomock.Any(), user, "http://example.com").Return("http://localhost:8080/mock_alias", nil).Times(1)
+	urlUC.EXPECT().CreateShortURL(gomock.Any(), user, "https://example.com").Return("http://localhost:8080/mock_alias", nil).Times(1)
 
 	w := httptest.NewRecorder()
 	h.CreateShortURL()(w, req)
@@ -90,7 +91,7 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 			},
 			request: request{
 				method: http.MethodPost,
-				body:   "http://example.com",
+				body:   "https://example1.com",
 				path:   "/",
 			},
 			response: response{

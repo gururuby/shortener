@@ -10,10 +10,11 @@ It features:
 package middleware
 
 import (
-	"github.com/gururuby/shortener/internal/infra/logger"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"github.com/gururuby/shortener/internal/infra/logger"
+	"go.uber.org/zap"
 )
 
 // Logging is middleware that logs HTTP requests and responses.

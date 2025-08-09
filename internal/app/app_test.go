@@ -5,6 +5,12 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"testing"
+
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/gururuby/shortener/internal/config"
 	entity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
@@ -12,11 +18,6 @@ import (
 	"github.com/gururuby/shortener/internal/infra/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"regexp"
-	"testing"
 )
 
 type (

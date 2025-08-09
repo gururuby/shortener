@@ -14,6 +14,7 @@ package usecase
 import (
 	"context"
 	"errors"
+
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/user/errors"

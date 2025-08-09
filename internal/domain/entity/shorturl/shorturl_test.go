@@ -1,13 +1,14 @@
 package entity
 
 import (
+	"testing"
+
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl/mocks"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	"github.com/gururuby/shortener/pkg/generator/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func Test_NewShortURL_OK(t *testing.T) {

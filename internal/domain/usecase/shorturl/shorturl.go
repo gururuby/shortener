@@ -14,12 +14,13 @@ package usecase
 import (
 	"context"
 	"errors"
+	"strings"
+
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"github.com/gururuby/shortener/pkg/validator"
-	"strings"
 )
 
 // ShortURLStorage defines the interface for short URL persistence operations.

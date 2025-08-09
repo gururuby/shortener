@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"testing"
+
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
@@ -11,7 +13,6 @@ import (
 	jwtErrors "github.com/gururuby/shortener/internal/infra/jwt/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func Test_Authenticate_OK(t *testing.T) {
@@ -343,11 +344,11 @@ func Test_GetURLs_OK(t *testing.T) {
 	ctx := context.Background()
 
 	urls := make([]*shortURLEntity.ShortURL, 0)
-	urls = append(urls, &shortURLEntity.ShortURL{Alias: "alias", SourceURL: "http://ya.ru"})
+	urls = append(urls, &shortURLEntity.ShortURL{Alias: "alias", SourceURL: "https://ya.ru"})
 
 	userURLs := make([]*UserShortURL, 0)
 	userURLs = append(userURLs, &UserShortURL{
-		OriginalURL: "http://ya.ru",
+		OriginalURL: "https://ya.ru",
 		ShortURL:    "http://localhost:8080/alias",
 	})
 

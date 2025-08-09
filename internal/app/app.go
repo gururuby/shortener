@@ -14,6 +14,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
@@ -30,8 +33,6 @@ import (
 	"github.com/gururuby/shortener/internal/infra/jwt"
 	"github.com/gururuby/shortener/internal/infra/logger"
 	"github.com/gururuby/shortener/internal/infra/router"
-	"log"
-	"net/http"
 )
 
 // ShortURLStorage defines the interface for short URL persistence operations.

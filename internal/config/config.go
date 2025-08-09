@@ -19,10 +19,11 @@ package config
 import (
 	"flag"
 	"fmt"
-	"github.com/caarlos0/env/v6"
-	"github.com/joho/godotenv"
 	"log"
 	"time"
+
+	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 )
 
 // Config represents the complete application configuration.

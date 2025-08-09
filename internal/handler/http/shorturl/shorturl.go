@@ -15,12 +15,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
-	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
-	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
+	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
 )
 
 const (

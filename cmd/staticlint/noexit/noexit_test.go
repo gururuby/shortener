@@ -1,11 +1,12 @@
 package noexit
 
 import (
-	"golang.org/x/tools/go/analysis/analysistest"
 	"testing"
+
+	"golang.org/x/tools/go/analysis/analysistest"
 )
 
 func TestNoOsExit(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, NoExitAnalyzer, "./...")
+	analysistest.Run(t, testdata, Analyzer, "./...")
 }

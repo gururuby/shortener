@@ -11,6 +11,7 @@ package db
 
 import (
 	"context"
+
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
@@ -103,7 +104,7 @@ func (db *MemoryDB) FindShortURL(_ context.Context, alias string) (*shortURLEnti
 // - aliases: URLs to mark as deleted
 // Returns:
 // - error: Always nil (not implemented)
-func (db *MemoryDB) MarkURLAsDeleted(ctx context.Context, userID int, aliases []string) error {
+func (db *MemoryDB) MarkURLAsDeleted(_ context.Context, _ int, _ []string) error {
 	return nil
 }
 

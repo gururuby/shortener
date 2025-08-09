@@ -11,9 +11,10 @@ It features:
 package logger
 
 import (
-	"go.uber.org/zap"
 	"log"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 // Log is the global logger instance that should be used throughout the application.

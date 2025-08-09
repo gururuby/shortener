@@ -2,6 +2,11 @@ package handler
 
 import (
 	"bytes"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	entity "github.com/gururuby/shortener/internal/domain/entity/user"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/shorturl/errors"
@@ -9,10 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type (
@@ -56,7 +57,7 @@ func Test_CreateShortURL_OK(t *testing.T) {
 		{
 			name: "when success create short url",
 			request: request{
-				body:        bytes.NewBufferString(`{"url":"http://example.com"}`),
+				body:        bytes.NewBufferString(`{"url":"https://example.com"}`),
 				contentType: "application/json",
 				method:      http.MethodPost,
 				path:        "/api/shorten",
@@ -65,7 +66,7 @@ func Test_CreateShortURL_OK(t *testing.T) {
 				status: http.StatusCreated,
 				body:   `{"Result":"http://localhost:8080/mock_alias"}`,
 			},
-			ucInput: "http://example.com",
+			ucInput: "https://example.com",
 			ucOutput: ucOutput{
 				res: "http://localhost:8080/mock_alias",
 			},
