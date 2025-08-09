@@ -10,6 +10,7 @@ The package supports configuration from multiple sources:
 2. Environment variables
 3. Command-line flags
 4. Default values
+5. JSON configuration files
 
 Configuration is organized into logical sections (App, Auth, Server, etc.)
 for better maintainability.
@@ -29,50 +30,55 @@ import (
 )
 
 // Config represents the complete application configuration.
-// It aggregates all configuration subsections.
+// It aggregates all configuration subsections including server settings,
+// authentication parameters, database configuration and logging setup.
 type Config struct {
-	Server
-	FileStorage
-	Log
-	App
-	Auth
-	Database
+	Server      Server      // HTTP/HTTPS server configuration
+	FileStorage FileStorage // File storage settings
+	Log         Log         // Logging configuration
+	App         App         // Application metadata
+	Auth        Auth        // Authentication settings
+	Database    Database    // Database connection parameters
 }
 
 // App contains application metadata and general settings.
 type App struct {
-	Env         string `env:"APP_ENV" envDefault:"development"`
-	Name        string `env:"APP_NAME" envDefault:"Shortener"`
-	Version     string `env:"APP_VERSION" envDefault:"0.0.1"`
-	BaseURL     string `env:"APP_BASE_URL"`
-	AliasLength int    `env:"APP_ALIAS_LENGTH" envDefault:"5"`
+	Env             string        `env:"APP_ENV" envDefault:"development"`      // Application environment (development/production)
+	Name            string        `env:"APP_NAME" envDefault:"Shortener"`       // Application name
+	Version         string        `env:"APP_VERSION" envDefault:"0.0.1"`        // Application version
+	BaseURL         string        `env:"APP_BASE_URL"`                          // Base URL for generated links
+	AliasLength     int           `env:"APP_ALIAS_LENGTH" envDefault:"5"`       // Default length for generated aliases
+	ShutdownTimeout time.Duration `env:"APP_SHUTDOWN_TIMEOUT" envDefault:"30s"` // Graceful shutdown timeout
 }
 
 // Auth contains JWT authentication settings.
 type Auth struct {
-	SecretKey string        `env:"AUTH_SECRET_KEY" envDefault:"secret"`
-	TokenTTL  time.Duration `env:"AUTH_TOKEN_TTL" envDefault:"24h"`
+	SecretKey string        `env:"AUTH_SECRET_KEY" envDefault:"secret"` // Secret key for JWT tokens
+	TokenTTL  time.Duration `env:"AUTH_TOKEN_TTL" envDefault:"24h"`     // Token time-to-live duration
 }
 
-// HTTPS contains HTTPS server configuration
+// HTTPS contains HTTPS server configuration.
 type HTTPS struct {
-	Enabled  bool   `env:"ENABLE_HTTPS" envDefault:"false"`
-	CertFile string `env:"HTTPS_CERT_FILE"`
-	KeyFile  string `env:"HTTPS_KEY_FILE"`
+	Enabled  bool   `env:"ENABLE_HTTPS" envDefault:"false"` // Enable HTTPS server
+	CertFile string `env:"HTTPS_CERT_FILE"`                 // Path to SSL certificate file
+	KeyFile  string `env:"HTTPS_KEY_FILE"`                  // Path to SSL private key file
 }
 
 // Server contains HTTP server configuration.
 type Server struct {
-	Address string `env:"SERVER_ADDRESS"` // Server listen address (host:port)
-	HTTPS
+	Address      string        `env:"SERVER_ADDRESS"`                        // Server listen address (host:port)
+	ReadTimeout  time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"5s"`   // Maximum duration for reading request
+	WriteTimeout time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"10s"` // Maximum duration for writing response
+	IdleTimeout  time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"` // Maximum idle connection duration
+	HTTPS        HTTPS         // HTTPS-specific configuration
 }
 
 // Database contains database connection settings.
 type Database struct {
-	Type         string        `env:"DATABASE_TYPE"`
-	DSN          string        `env:"DATABASE_DSN"`
-	ConnTryDelay time.Duration `env:"DATABASE_CONN_TRY_DELAY" envDefault:"5s"`
-	ConnTryTimes int           `env:"DATABASE_CONN_TRY_TIMES" envDefault:"5"`
+	Type         string        `env:"DATABASE_TYPE"`                           // Database type (postgresql/mysql/file/memory)
+	DSN          string        `env:"DATABASE_DSN"`                            // Data Source Name (connection string)
+	ConnTryDelay time.Duration `env:"DATABASE_CONN_TRY_DELAY" envDefault:"5s"` // Delay between connection attempts
+	ConnTryTimes int           `env:"DATABASE_CONN_TRY_TIMES" envDefault:"5"`  // Number of connection attempts
 }
 
 // FileStorage contains settings for file-based storage.
@@ -94,6 +100,14 @@ var (
 // 1. .env file (if present)
 // 2. Environment variables
 // 3. Command-line flags
+// 4. JSON configuration file (if specified)
+//
+// The loading order follows the priority:
+// 1. Command-line flags (highest priority)
+// 2. Environment variables
+// 3. .env file
+// 4. JSON config file
+// 5. Default values (lowest priority)
 //
 // Returns:
 // - *Config: Loaded configuration
@@ -101,6 +115,7 @@ var (
 func New() (*Config, error) {
 	var err error
 
+	// Load from JSON config file if specified
 	if jsonCfgName != "" {
 		err = loadConfigFromJSON(jsonCfgName, cfg)
 		if err != nil {
@@ -136,31 +151,35 @@ func New() (*Config, error) {
 	return &cfg, nil
 }
 
-// loadConfigFromJSON reads and parses JSON configuration file into Config struct
+// loadConfigFromJSON reads and parses JSON configuration file into Config struct.
+// The function expects the path to a valid JSON file matching the Config structure.
+// Returns error if file cannot be read or contains invalid configuration.
 func loadConfigFromJSON(path string, cfg Config) error {
 	file, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	if err := json.Unmarshal(file, &cfg); err != nil {
-		return err
+		return fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	return nil
 }
 
 // AppInfo generates a formatted string with application information.
-// Format: "<Name> v<Version> (<Env>)"
+// The format is: "<Name> v<Version> (<Env>)"
+// Example: "Shortener v1.0.0 (production)"
 func (c *Config) AppInfo() string {
 	return fmt.Sprintf("%s v%s (%s)", c.App.Name, c.App.Version, c.App.Env)
 }
 
 // init registers command-line flags with their default values.
+// The flags are registered when the package is initialized.
 func init() {
 	flag.StringVar(&cfg.Server.Address, "a", "localhost:8080", "Server address (host:port)")
 	flag.StringVar(&cfg.App.BaseURL, "b", "http://localhost:8080", "Base URL for shortened links")
-	flag.StringVar(&jsonCfgName, "c", "config.json", "Name of config file")
+	flag.StringVar(&jsonCfgName, "c", "", "Name of config file")
 	flag.StringVar(&cfg.Database.DSN, "d", "", "Database connection string (DSN)")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "Path to file storage")
 	flag.BoolVar(&cfg.Server.HTTPS.Enabled, "s", true, "Run HTTPS server")

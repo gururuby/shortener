@@ -1,6 +1,9 @@
 {
   "server": {
     "address": ":8080",
+    "read_timeout": "5s",
+    "write_timeout": "10s",
+    "idle_timeout": "120s",
     "https": {
       "enabled": true,
       "certFile": "/path/to/cert.pem",
@@ -12,7 +15,8 @@
     "name": "URL Shortener",
     "version": "1.0.0",
     "baseURL": "https://example.com",
-    "aliasLength": 6
+    "aliasLength": 6,
+    "shutdown_timeout": "30s"
   },
   "auth": {
     "secretKey": "secure-secret-key",
