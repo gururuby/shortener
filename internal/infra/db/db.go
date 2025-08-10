@@ -48,6 +48,9 @@ type DB interface {
 
 	// Ping checks if the database is available
 	Ping(ctx context.Context) error
+
+	// Shutdown allows to gracefully shutdown databases
+	Shutdown(context.Context) error
 }
 
 // Setup initializes and returns the appropriate database implementation

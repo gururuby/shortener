@@ -16,6 +16,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"time"
 
 	"github.com/gururuby/shortener/internal/config"
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
@@ -29,12 +30,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
 )
 
 //go:embed migrations/*.sql
 var migrations embed.FS
 
 const (
+	waitConnectionCloseTimeout = 5 * time.Second
+
 	findShortURLQuery            = `SELECT original_url, uuid, is_deleted FROM urls WHERE urls.alias = $1`
 	findUserQuery                = `SELECT id FROM users WHERE users.id = $1`
 	findUserURLsQuery            = `SELECT alias, original_url FROM urls WHERE urls.user_id = $1`
@@ -56,11 +60,14 @@ type PGDBPool interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	// Ping checks if the database is available
 	Ping(ctx context.Context) error
+	Close()
+	Stat() *pgxpool.Stat
 }
 
 // PGDB implements the database interface using PostgreSQL as the backend.
 type PGDB struct {
-	pool PGDBPool // Connection pool for database operations
+	pool    PGDBPool // Connection pool for database operations
+	closing chan struct{}
 }
 
 // New creates and initializes a new PGDB instance.
@@ -97,7 +104,8 @@ func New(ctx context.Context, cfg *config.Config) (*PGDB, error) {
 	}
 
 	return &PGDB{
-		pool: pool,
+		pool:    pool,
+		closing: make(chan struct{}),
 	}, nil
 }
 
@@ -308,4 +316,31 @@ func (db *PGDB) findShortURLBySourceURL(ctx context.Context, sourceURL string) (
 // - error: If database is unreachable
 func (db *PGDB) Ping(ctx context.Context) error {
 	return db.pool.Ping(ctx)
+}
+
+// Shutdown gracefully closes the database connection pool.
+// It waits for all connections to finish their work before closing.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// Returns:
+// - error: If shutdown fails or context expires
+func (db *PGDB) Shutdown(ctx context.Context) error {
+	if pool, ok := db.pool.(*pgxpool.Pool); ok {
+		logger.Log.Info("Closing database connection pool...")
+		pool.Close()
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(waitConnectionCloseTimeout):
+			stats := pool.Stat()
+			if stats.TotalConns() > 0 {
+				logger.Log.Warn("Database connections still active during shutdown",
+					zap.Int32("active_connections", stats.TotalConns()))
+				return errors.New("not all database connections were closed")
+			}
+		}
+	}
+	logger.Log.Info("Database connection pool closed successfully")
+	return nil
 }

@@ -111,3 +111,10 @@ func (db *NullDB) MarkURLAsDeleted(_ context.Context, _ int, _ []string) error {
 func (db *NullDB) Ping(_ context.Context) error {
 	return nil
 }
+
+// Shutdown is a no-op implementation that always succeeds.
+// Parameters:
+// - ctx: Context (ignored)
+// Returns:
+// - error: Always nil
+func (db *NullDB) Shutdown(_ context.Context) error { return nil }

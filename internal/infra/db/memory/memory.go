@@ -161,3 +161,10 @@ func (db *MemoryDB) SaveShortURL(ctx context.Context, shortURL *shortURLEntity.S
 func (db *MemoryDB) Ping(_ context.Context) error {
 	return nil
 }
+
+// Shutdown is a no-op implementation that always succeeds.
+// Parameters:
+// - ctx: Context (ignored)
+// Returns:
+// - error: Always nil
+func (db *MemoryDB) Shutdown(_ context.Context) error { return nil }
