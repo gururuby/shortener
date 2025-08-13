@@ -10,10 +10,11 @@ It includes:
 package generator
 
 import (
-	"github.com/google/uuid"
-	"github.com/gururuby/shortener/pkg/generator/errors"
 	"math/rand"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/gururuby/shortener/pkg/generator/errors"
 )
 
 // Generator provides methods for generating unique identifiers.

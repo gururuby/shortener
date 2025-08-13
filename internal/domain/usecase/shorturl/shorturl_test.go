@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"context"
+	"testing"
+
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
@@ -9,7 +11,6 @@ import (
 	"github.com/gururuby/shortener/internal/domain/usecase/shorturl/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func Test_FindShortURL_OK(t *testing.T) {
@@ -176,7 +177,7 @@ func Test_CreateShortURL_Errors(t *testing.T) {
 		},
 		{
 			name:      "when passed existing source URL",
-			sourceURL: "http://ya.ru",
+			sourceURL: "https://ya.ru",
 			baseURL:   "http://localhost:8888",
 			storageRes: storageRes{
 				shortURL: &entity.ShortURL{Alias: "alias"},

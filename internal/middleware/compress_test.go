@@ -107,7 +107,7 @@ func TestCompressionMiddleware(t *testing.T) {
 				body = strings.NewReader("")
 			}
 
-			req := httptest.NewRequest("GET", "http://example.com", body)
+			req := httptest.NewRequest("GET", "https://example.com", body)
 			req.Header.Set("Accept-Encoding", tt.acceptEncoding)
 			req.Header.Set("Content-Encoding", tt.contentEncoding)
 			req.Header.Set("Content-Type", tt.contentType)

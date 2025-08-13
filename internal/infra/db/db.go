@@ -14,6 +14,8 @@ package db
 
 import (
 	"context"
+	"log"
+
 	"github.com/gururuby/shortener/internal/config"
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
@@ -21,7 +23,6 @@ import (
 	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
 	nullDB "github.com/gururuby/shortener/internal/infra/db/null"
 	postgresqlDB "github.com/gururuby/shortener/internal/infra/db/postgresql"
-	"log"
 )
 
 // DB defines the interface for all database operations in the application.
@@ -47,6 +48,9 @@ type DB interface {
 
 	// Ping checks if the database is available
 	Ping(ctx context.Context) error
+
+	// Shutdown allows to gracefully shutdown databases
+	Shutdown(context.Context) error
 }
 
 // Setup initializes and returns the appropriate database implementation

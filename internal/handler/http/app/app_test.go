@@ -1,16 +1,17 @@
 package handler
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 	"github.com/gururuby/shortener/internal/handler/http/app/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func Test_Ping_OK(t *testing.T) {

@@ -142,7 +142,7 @@ func (c compressReader) Read(p []byte) (n int, err error) {
 }
 
 // Close closes both the original reader and gzip reader.
-func (c *compressReader) Close() error {
+func (c compressReader) Close() error {
 	if err := c.r.Close(); err != nil {
 		return err
 	}

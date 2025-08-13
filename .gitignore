@@ -32,3 +32,4 @@ vendor/
 
 # Config
 .env
+config.json

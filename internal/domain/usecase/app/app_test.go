@@ -2,12 +2,13 @@ package usecase
 
 import (
 	"context"
+	"testing"
+
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
 	ucErrors "github.com/gururuby/shortener/internal/domain/usecase/app/errors"
 	"github.com/gururuby/shortener/internal/domain/usecase/app/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func Test_PingDB(t *testing.T) {

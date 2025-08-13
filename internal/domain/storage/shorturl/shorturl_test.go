@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"testing"
+
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	entityMock "github.com/gururuby/shortener/internal/domain/entity/shorturl/mocks"
 	storageErrors "github.com/gururuby/shortener/internal/domain/storage/errors"
@@ -9,7 +11,6 @@ import (
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"testing"
 )
 
 func Test_Storage_FindShortURL_OK(t *testing.T) {

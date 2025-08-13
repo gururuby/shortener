@@ -16,11 +16,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"time"
+
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	"github.com/gururuby/shortener/internal/domain/usecase/user"
 	handlerErrors "github.com/gururuby/shortener/internal/handler/http/api/user/errors"
-	"net/http"
-	"time"
 )
 
 // Available constants

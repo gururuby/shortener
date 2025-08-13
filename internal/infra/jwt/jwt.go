@@ -10,9 +10,10 @@ It provides:
 package jwt
 
 import (
+	"time"
+
 	"github.com/golang-jwt/jwt/v4"
 	jwtErrors "github.com/gururuby/shortener/internal/infra/jwt/errors"
-	"time"
 )
 
 // claims contains the JWT claims structure including registered claims

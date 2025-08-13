@@ -2,6 +2,11 @@ package handler
 
 import (
 	"bytes"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/go-chi/chi/v5"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	usecase "github.com/gururuby/shortener/internal/domain/usecase/user"
@@ -9,10 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 type (
@@ -44,7 +45,7 @@ func Test_GetURLs_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	userUC := mocks.NewMockUserUseCase(ctrl)
 
-	urls = append(urls, &usecase.UserShortURL{ShortURL: "http://example.com/alias", OriginalURL: "https://ya.ru"})
+	urls = append(urls, &usecase.UserShortURL{ShortURL: "https://example.com/alias", OriginalURL: "https://ya.ru"})
 
 	r := chi.NewRouter()
 	h := handler{router: r, userUC: userUC}
@@ -65,7 +66,7 @@ func Test_GetURLs_OK(t *testing.T) {
 			},
 			response: response{
 				status: http.StatusOK,
-				body:   `[{"short_url":"http://example.com/alias","original_url":"https://ya.ru"}]`,
+				body:   `[{"short_url":"https://example.com/alias","original_url":"https://ya.ru"}]`,
 			},
 			ucInput: &userEntity.User{ID: 1},
 			ucOutput: ucOutput{

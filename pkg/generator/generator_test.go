@@ -1,11 +1,12 @@
 package generator
 
 import (
+	"regexp"
+	"testing"
+
 	"github.com/gururuby/shortener/pkg/generator/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"regexp"
-	"testing"
 )
 
 func TestGenerator_UUID(t *testing.T) {

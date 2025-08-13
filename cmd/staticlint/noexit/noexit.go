@@ -31,17 +31,18 @@ package noexit
 
 import (
 	"go/ast"
+	"strings"
+
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
-	"strings"
 )
 
-// NoExitAnalyzer is the analyzer variable that checks for forbidden os.Exit calls.
+// Analyzer is the analyzer variable that checks for forbidden os.Exit calls.
 // It implements the analysis.Analyzer interface and can be used with analysis tools.
 //
 // The analyzer checks all files in the main package named "main.go" for a main()
 // function containing direct calls to os.Exit().
-var NoExitAnalyzer = &analysis.Analyzer{
+var Analyzer = &analysis.Analyzer{
 	Name:     "noexit",
 	Doc:      "forbid direct calls to os.Exit in main function of main package",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},

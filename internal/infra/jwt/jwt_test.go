@@ -1,12 +1,13 @@
 package jwt
 
 import (
-	jwtErrors "github.com/gururuby/shortener/internal/infra/jwt/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"regexp"
 	"testing"
 	"time"
+
+	jwtErrors "github.com/gururuby/shortener/internal/infra/jwt/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJWT_SignUserID(t *testing.T) {

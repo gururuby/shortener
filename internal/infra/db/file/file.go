@@ -13,12 +13,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"sync"
+
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/json-iterator/go"
-	"os"
-	"sync"
 )
 
 var json = jsoniter.ConfigFastest
@@ -275,4 +276,34 @@ func (db *FileDB) MarkURLAsDeleted(_ context.Context, _ int, _ []string) error {
 func (db *FileDB) Ping(_ context.Context) error {
 	_, err := db.file.Stat()
 	return err
+}
+
+// Shutdown gracefully closes the database connection and flushes any pending writes.
+// It ensures all data is persisted to disk before closing.
+// Parameters:
+// - ctx: Context for cancellation/timeouts
+// Returns:
+// - error: If shutdown fails (e.g. file sync error)
+func (db *FileDB) Shutdown(_ context.Context) error {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
+	if db.file == nil {
+		return nil // Already closed
+	}
+
+	// 1. Flush any buffered data to disk
+	if err := db.file.Sync(); err != nil {
+		return fmt.Errorf("failed to sync file: %w", err)
+	}
+
+	// 2. Close the file handle
+	if err := db.file.Close(); err != nil {
+		return fmt.Errorf("failed to close file: %w", err)
+	}
+
+	// 3. Clear the reference to prevent double-close
+	db.file = nil
+
+	return nil
 }

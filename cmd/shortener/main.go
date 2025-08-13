@@ -16,9 +16,10 @@ Key components:
 package main
 
 import (
+	"log"
+
 	"github.com/gururuby/shortener/internal/app"
 	"github.com/gururuby/shortener/internal/config"
-	"log"
 )
 
 // Global variables storing build information.

@@ -43,7 +43,7 @@ func TestIsInvalidURL(t *testing.T) {
 		},
 		{
 			name:    "valid URL with query params",
-			url:     "http://example.com?param=value",
+			url:     "https://example.com?param=value",
 			want:    false,
 			comment: "URL with query parameters should be valid",
 		},
