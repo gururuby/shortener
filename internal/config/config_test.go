@@ -29,10 +29,11 @@ func TestConfig(t *testing.T) {
 					SecretKey: "secret",
 				},
 				Server: Server{
-					Address:      "localhost:8080",
-					ReadTimeout:  5 * time.Second,
-					WriteTimeout: 10 * time.Second,
-					IdleTimeout:  120 * time.Second,
+					Address:       "localhost:8080",
+					ReadTimeout:   5 * time.Second,
+					TrustedSubnet: "127.0.0.1/24",
+					WriteTimeout:  10 * time.Second,
+					IdleTimeout:   120 * time.Second,
 					HTTPS: HTTPS{
 						Enabled: false,
 					},

@@ -15,7 +15,7 @@ import (
 
 func Test_Storage_FindUser_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 
 	storage := UserStorage{db: db}
@@ -49,7 +49,7 @@ func Test_Storage_FindUser_OK(t *testing.T) {
 
 func Test_Storage_FindUser_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 
 	storage := UserStorage{db: db}
@@ -82,7 +82,7 @@ func Test_Storage_FindUser_Errors(t *testing.T) {
 
 func Test_Storage_SaveUser_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 	user := &entity.User{ID: 1}
 
@@ -109,7 +109,7 @@ func Test_Storage_SaveUser_OK(t *testing.T) {
 
 func Test_Storage_SaveUser_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 
 	storage := UserStorage{db: db}
@@ -136,7 +136,7 @@ func Test_Storage_FindURLs_OK(t *testing.T) {
 	var urls []*shortURLEntity.ShortURL
 
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 	storage := UserStorage{db: db}
 
@@ -163,7 +163,7 @@ func Test_Storage_FindURLs_OK(t *testing.T) {
 
 func Test_Storage_FindURLs_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 
 	storage := UserStorage{db: db}
@@ -190,7 +190,7 @@ func Test_Storage_FindURLs_Errors(t *testing.T) {
 
 func Test_Storage_MarkURLAsDeleted_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 	storage := UserStorage{db: db}
 
@@ -218,7 +218,7 @@ func Test_Storage_MarkURLAsDeleted_OK(t *testing.T) {
 
 func Test_Storage_MarkURLAsDeleted_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockUserDB(ctrl)
 	ctx := context.Background()
 	storage := UserStorage{db: db}
 
