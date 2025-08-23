@@ -66,11 +66,12 @@ type HTTPS struct {
 
 // Server contains HTTP server configuration.
 type Server struct {
-	Address      string        `env:"SERVER_ADDRESS"`                        // Server listen address (host:port)
-	ReadTimeout  time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"5s"`   // Maximum duration for reading request
-	WriteTimeout time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"10s"` // Maximum duration for writing response
-	IdleTimeout  time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"` // Maximum idle connection duration
-	HTTPS        HTTPS         // HTTPS-specific configuration
+	Address       string        `env:"SERVER_ADDRESS"`                           // Server listen address (host:port)
+	ReadTimeout   time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"5s"`      // Maximum duration for reading request
+	TrustedSubnet string        `env:"TRUSTED_SUBNET" envDefault:"127.0.0.1/24"` //Subnet setting for restrict access to specific endpoints
+	WriteTimeout  time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"10s"`    // Maximum duration for writing response
+	IdleTimeout   time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"`    // Maximum idle connection duration
+	HTTPS         HTTPS         // HTTPS-specific configuration
 }
 
 // Database contains database connection settings.
@@ -182,5 +183,7 @@ func init() {
 	flag.StringVar(&jsonCfgName, "c", "", "Name of config file")
 	flag.StringVar(&cfg.Database.DSN, "d", "", "Database connection string (DSN)")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "Path to file storage")
+	flag.StringVar(&cfg.Server.TrustedSubnet, "t", "", "Trusted subnet")
 	flag.BoolVar(&cfg.Server.HTTPS.Enabled, "s", true, "Run HTTPS server")
+
 }

@@ -18,6 +18,7 @@ import (
 
 	"github.com/gururuby/shortener/internal/config"
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	statsEntity "github.com/gururuby/shortener/internal/domain/entity/stats"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	fileDB "github.com/gururuby/shortener/internal/infra/db/file"
 	memoryDB "github.com/gururuby/shortener/internal/infra/db/memory"
@@ -31,6 +32,7 @@ type DB interface {
 	// FindShortURL retrieves a short URL by its alias
 	FindShortURL(ctx context.Context, alias string) (*shortURLEntity.ShortURL, error)
 
+	GetResourcesCounts(ctx context.Context) (*statsEntity.Stats, error)
 	// SaveShortURL stores a new short URL
 	SaveShortURL(ctx context.Context, shortURL *shortURLEntity.ShortURL) (*shortURLEntity.ShortURL, error)
 

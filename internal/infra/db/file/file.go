@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	statsEntity "github.com/gururuby/shortener/internal/domain/entity/stats"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/json-iterator/go"
@@ -156,6 +157,13 @@ func (db *FileDB) FindUserURLs(_ context.Context, userID int) ([]*shortURLEntity
 	}
 
 	return urls, nil
+}
+
+// GetResourcesCounts returns the total count of URLs and users from file/in-memory storage.
+// For file-based storage, it counts entries currently loaded in memory.
+// Always returns nil error as operation cannot fail for memory data.
+func (db *FileDB) GetResourcesCounts(ctx context.Context) (*statsEntity.Stats, error) {
+	return &statsEntity.Stats{URLsCount: int64(len(db.shortURLs)), UsersCount: int64(len(db.users))}, nil
 }
 
 // SaveUser creates and stores a new user.

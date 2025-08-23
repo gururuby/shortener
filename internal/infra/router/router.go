@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gururuby/shortener/internal/config"
 	"github.com/gururuby/shortener/internal/middleware"
 )
 
@@ -41,10 +42,11 @@ type Router interface {
 //
 // Returns:
 // - Router: Configured router instance ready for route registration
-func Setup() Router {
+func Setup(srvConfig config.Server) Router {
 	router := chi.NewRouter()
 	router.Use(middleware.Logging)
 	router.Use(middleware.Compression)
+	router.Use(middleware.TrustedSubnetMiddleware(srvConfig.TrustedSubnet))
 
 	return router
 }

@@ -20,6 +20,7 @@ import (
 
 	"github.com/gururuby/shortener/internal/config"
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	statsEntity "github.com/gururuby/shortener/internal/domain/entity/stats"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 	"github.com/gururuby/shortener/internal/infra/logger"
@@ -43,6 +44,7 @@ const (
 	findUserQuery                = `SELECT id FROM users WHERE users.id = $1`
 	findUserURLsQuery            = `SELECT alias, original_url FROM urls WHERE urls.user_id = $1`
 	findShortURLBySourceURLQuery = `SELECT alias FROM urls WHERE urls.original_url = $1`
+	getResourcesCountsQuery      = `SELECT	(SELECT COUNT(*) FROM users) AS users_count, (SELECT COUNT(*) FROM urls) AS urls_count`
 	saveShortURLQuery            = `INSERT INTO urls (alias, original_url) VALUES ($1, $2)`
 	saveShortURLQueryWithUser    = `INSERT INTO urls (alias, original_url, user_id) VALUES ($1, $2, $3)`
 	saveUserQuery                = `INSERT INTO users DEFAULT VALUES RETURNING id`
@@ -231,6 +233,20 @@ func (db *PGDB) FindShortURL(ctx context.Context, alias string) (*shortURLEntity
 	}
 
 	return &shortURL, nil
+}
+
+// GetResourcesCounts returns the total count of users and URLs in the system.
+// Executes a SQL query to count records in users and URLs tables.
+// Returns database error if the query fails.
+func (db *PGDB) GetResourcesCounts(ctx context.Context) (*statsEntity.Stats, error) {
+	stats := statsEntity.Stats{}
+	err := db.pool.QueryRow(ctx, getResourcesCountsQuery).Scan(&stats.UsersCount, &stats.URLsCount)
+	if err != nil {
+		logger.Log.Error(err.Error())
+		return nil, dbErrors.ErrDBQuery
+	}
+
+	return &stats, err
 }
 
 // SaveShortURL stores a new short URL in the database.

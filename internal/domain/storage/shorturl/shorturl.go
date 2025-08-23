@@ -1,4 +1,4 @@
-//go:generate mockgen -destination=./mocks/mock.go -package=mocks . DB
+//go:generate mockgen -destination=./mocks/mock.go -package=mocks . ShortURLDB
 
 /*
 Package storage provides data persistence implementations for the application.

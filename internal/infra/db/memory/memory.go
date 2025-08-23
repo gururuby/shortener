@@ -13,6 +13,7 @@ import (
 	"context"
 
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	statsEntity "github.com/gururuby/shortener/internal/domain/entity/stats"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	dbErrors "github.com/gururuby/shortener/internal/infra/db/errors"
 )
@@ -66,6 +67,12 @@ func (db *MemoryDB) FindUserURLs(_ context.Context, userID int) ([]*shortURLEnti
 	}
 
 	return urls, nil
+}
+
+// GetResourcesCounts returns the total count of URLs and users from in-memory storage.
+// Always returns nil error as operation cannot fail for memory data.
+func (db *MemoryDB) GetResourcesCounts(ctx context.Context) (*statsEntity.Stats, error) {
+	return &statsEntity.Stats{URLsCount: int64(len(db.shortURLs)), UsersCount: int64(len(db.users))}, nil
 }
 
 // SaveUser creates and stores a new user in memory.

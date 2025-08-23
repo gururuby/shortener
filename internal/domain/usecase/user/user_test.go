@@ -116,7 +116,6 @@ func Test_Register_OK(t *testing.T) {
 		}
 		storageRes struct {
 			user *userEntity.User
-			err  error
 		}
 	)
 

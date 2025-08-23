@@ -13,10 +13,13 @@ import (
 	"github.com/gururuby/shortener/internal/domain/entity/shorturl"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 	shortURLStorage "github.com/gururuby/shortener/internal/domain/storage/shorturl"
+	statsStorage "github.com/gururuby/shortener/internal/domain/storage/stats"
 	userStorage "github.com/gururuby/shortener/internal/domain/storage/user"
 	appUseCase "github.com/gururuby/shortener/internal/domain/usecase/app"
 	shortURLUseCase "github.com/gururuby/shortener/internal/domain/usecase/shorturl"
+	statsUseCase "github.com/gururuby/shortener/internal/domain/usecase/stats"
 	userUseCase "github.com/gururuby/shortener/internal/domain/usecase/user"
+	apiStatsHandler "github.com/gururuby/shortener/internal/handler/http/api/internal_stats"
 	apiShortURLHandler "github.com/gururuby/shortener/internal/handler/http/api/shorturl"
 	apiUserHandler "github.com/gururuby/shortener/internal/handler/http/api/user"
 	appHandler "github.com/gururuby/shortener/internal/handler/http/app"
@@ -80,17 +83,21 @@ func (a *App) Setup() *App {
 
 	shortURLStg := shortURLStorage.Setup(db, a.Config)
 	userStg := userStorage.Setup(db)
-	r := router.Setup()
+	statsStg := statsStorage.Setup(db)
+
+	r := router.Setup(a.Config.Server)
 	auth := jwt.New(a.Config.Auth.SecretKey, a.Config.Auth.TokenTTL)
 
 	userUC := userUseCase.NewUserUseCase(auth, userStg, a.Config.App.BaseURL)
 	urlUC := shortURLUseCase.NewShortURLUseCase(shortURLStg, a.Config.App.BaseURL)
+	statsUC := statsUseCase.NewStatsUseCase(statsStg)
 	appUC := appUseCase.NewAppUseCase(shortURLStg)
 
 	shortURLHandler.Register(r, urlUC, userUC)
 	appHandler.Register(r, appUC)
 	apiShortURLHandler.Register(r, userUC, urlUC)
 	apiUserHandler.Register(r, userUC)
+	apiStatsHandler.Register(r, statsUC)
 
 	a.ShortURLSStorage = shortURLStg
 	a.UserStorage = userStg

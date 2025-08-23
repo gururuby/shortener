@@ -4,6 +4,7 @@
     "read_timeout": "5s",
     "write_timeout": "10s",
     "idle_timeout": "120s",
+    "trusted_subnet": "127.0.0.1/24",
     "https": {
       "enabled": true,
       "certFile": "/path/to/cert.pem",
