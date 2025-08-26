@@ -13,6 +13,7 @@ import (
 	"context"
 
 	shortURLEntity "github.com/gururuby/shortener/internal/domain/entity/shorturl"
+	statsEntity "github.com/gururuby/shortener/internal/domain/entity/stats"
 	userEntity "github.com/gururuby/shortener/internal/domain/entity/user"
 )
 
@@ -70,15 +71,9 @@ func (db *NullDB) FindShortURL(_ context.Context, _ string) (*shortURLEntity.Sho
 	return nil, nil
 }
 
-// findShortURLBySourceURL is a no-op implementation that always returns nil.
-// Parameters:
-// - ctx: Context (ignored)
-// - sourceURL: Original URL (ignored)
-// Returns:
-// - *shortURLEntity.ShortURL: Always nil
-// - error: Always nil
-func (db *NullDB) findShortURLBySourceURL(_ context.Context, _ string) (*shortURLEntity.ShortURL, error) {
-	return nil, nil
+// GetResourcesCounts is a no-op implementation that returns the empty Stats entity.
+func (db *NullDB) GetResourcesCounts(_ context.Context) (*statsEntity.Stats, error) {
+	return &statsEntity.Stats{}, nil
 }
 
 // SaveShortURL is a no-op implementation that returns the input unchanged.

@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package shorturl;
+
+option go_package = "github.com/gururuby/shortener/internal/grpc/shorturl";
+
+service ShortURLService {
+    rpc CreateShortURL(CreateShortURLRequest) returns (CreateShortURLResponse);
+    rpc BatchShortURLs(BatchShortURLsRequest) returns (BatchShortURLsResponse);
+    rpc FindShortURL(FindShortURLRequest) returns (FindShortURLResponse);
+}
+
+message CreateShortURLRequest {
+    string auth_token = 1;
+    string url = 2;
+}
+
+message CreateShortURLResponse {
+    string result = 1;
+    string error = 2;
+    bool conflict = 3;
+}
+
+message BatchShortURLsRequest {
+    string auth_token = 1;
+    repeated BatchURLInput urls = 2;
+}
+
+message BatchURLInput {
+    string correlation_id = 1;
+    string original_url = 2;
+}
+
+message BatchShortURLsResponse {
+    repeated BatchURLOutput urls = 1;
+    string error = 2;
+}
+
+message BatchURLOutput {
+    string correlation_id = 1;
+    string short_url = 2;
+}
+
+message FindShortURLRequest {
+    string alias = 1;
+}
+
+message FindShortURLResponse {
+    string location = 1;
+    string error = 2;
+    bool gone = 3;
+}

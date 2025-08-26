@@ -25,6 +25,7 @@ type (
 		contentType     string
 		contentEncoding string
 		acceptEncoding  string
+		xRealIP         string
 	}
 
 	request struct {
@@ -39,7 +40,6 @@ type (
 		headers headers
 		method  string
 		path    string
-		request
 	}
 	response struct {
 		headers  headers
@@ -162,6 +162,19 @@ func Test_App_OK(t *testing.T) {
 				status:  http.StatusOK,
 			},
 			want: `[{"short_url":"http://localhost:8080/\w{5}","original_url:"https://ya.ru"}]`,
+		},
+		{
+			name: "when get stats via internal API",
+			request: request{
+				method:  http.MethodGet,
+				headers: headers{contentType: "application/json", xRealIP: "127.0.0.1"},
+				path:    "/api/internal/stats",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusOK,
+			},
+			want: `{"urls":\d+,"users":\d+}`,
 		},
 	}
 	for _, tt := range tests {
@@ -317,6 +330,19 @@ func Test_App_Errors(t *testing.T) {
 			},
 			want: `{"Error":"invalid source URL, please specify valid URL","StatusCode":422}`,
 		},
+		{
+			name: "when try to access to stats from not trusted network",
+			request: request{
+				method:  http.MethodGet,
+				headers: headers{contentType: "application/json", xRealIP: "192.168.1.1"},
+				path:    "/api/internal/stats",
+			},
+			response: response{
+				headers: headers{contentType: "application/json"},
+				status:  http.StatusForbidden,
+			},
+			want: "Access forbidden\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -346,6 +372,7 @@ func testRequest(t *testing.T, ts *httptest.Server, r request) (*http.Response, 
 	req.Header.Set("Content-Type", r.headers.contentType)
 	req.Header.Set("Content-Encoding", r.headers.contentEncoding)
 	req.Header.Set("Accept-Encoding", r.headers.acceptEncoding)
+	req.Header.Set("X-Real-IP", r.headers.xRealIP)
 
 	if r.authToken != "" {
 		authCookie := http.Cookie{Name: "Authorization", Value: r.authToken}
@@ -374,6 +401,7 @@ func testCompressedRequest(t *testing.T, ts *httptest.Server, r compressedReques
 	req.Header.Set("Content-Type", r.headers.contentType)
 	req.Header.Set("Content-Encoding", r.headers.contentEncoding)
 	req.Header.Set("Accept-Encoding", r.headers.acceptEncoding)
+	req.Header.Set("X-Real-IP", r.headers.xRealIP)
 
 	resp, err := ts.Client().Do(req)
 	require.NoError(t, err)

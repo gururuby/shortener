@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package stats;
+
+option go_package = "github.com/gururuby/shortener/internal/grpc/stats";
+
+service StatsService {
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
+}
+
+message GetStatsRequest {}
+
+message GetStatsResponse {
+  int64 urls_count = 1;
+  int64 users_count = 2;
+  string error = 3;
+}

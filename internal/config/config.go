@@ -66,11 +66,27 @@ type HTTPS struct {
 
 // Server contains HTTP server configuration.
 type Server struct {
-	Address      string        `env:"SERVER_ADDRESS"`                        // Server listen address (host:port)
-	ReadTimeout  time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"5s"`   // Maximum duration for reading request
-	WriteTimeout time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"10s"` // Maximum duration for writing response
-	IdleTimeout  time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"` // Maximum idle connection duration
-	HTTPS        HTTPS         // HTTPS-specific configuration
+	Address       string        `env:"SERVER_ADDRESS"`                           // Server listen address (host:port)
+	ReadTimeout   time.Duration `env:"SERVER_READ_TIMEOUT" envDefault:"5s"`      // Maximum duration for reading request
+	TrustedSubnet string        `env:"TRUSTED_SUBNET" envDefault:"127.0.0.1/24"` //Subnet setting for restrict access to specific endpoints
+	WriteTimeout  time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"10s"`    // Maximum duration for writing response
+	IdleTimeout   time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"`    // Maximum idle connection duration
+	HTTPS         HTTPS         // HTTPS-specific configuration
+	GRPC          GRPC          // GRPC-specific configuration
+}
+
+// GRPC contains GRPC server configuration
+type GRPC struct {
+	Enabled               bool          `env:"GRPC_ENABLED" envDefault:"false"`
+	ConnectionTimeout     time.Duration `env:"GRPC_CONNECTION_TIMEOUT" envDefault:"120s"`
+	Address               string        `env:"GRPC_ADDRESS" envDefault:":50051"`
+	MaxConnectionIdle     time.Duration `env:"GRPC_MAX_CONNECTION_IDLE" envDefault:"2h"`
+	MaxConnectionAge      time.Duration `env:"GRPC_MAX_CONNECTION_AGE" envDefault:"30m"`
+	MaxConnectionAgeGrace time.Duration `env:"GRPC_MAX_CONNECTION_AGE_GRACE" envDefault:"5m"`
+	KeepaliveTime         time.Duration `env:"GRPC_KEEPALIVE_TIME" envDefault:"2h"`
+	KeepaliveTimeout      time.Duration `env:"GRPC_KEEPALIVE_TIMEOUT" envDefault:"20s"`
+	MinKeepaliveTime      time.Duration `env:"GRPC_MIN_KEEPALIVE_TIME" envDefault:"10s"`
+	PermitWithoutStream   bool          `env:"GRPC_PERMIT_WITHOUT_STREAM" envDefault:"true"`
 }
 
 // Database contains database connection settings.
@@ -182,5 +198,7 @@ func init() {
 	flag.StringVar(&jsonCfgName, "c", "", "Name of config file")
 	flag.StringVar(&cfg.Database.DSN, "d", "", "Database connection string (DSN)")
 	flag.StringVar(&cfg.FileStorage.Path, "f", "/tmp/db.json", "Path to file storage")
+	flag.StringVar(&cfg.Server.TrustedSubnet, "t", "", "Trusted subnet")
 	flag.BoolVar(&cfg.Server.HTTPS.Enabled, "s", true, "Run HTTPS server")
+
 }

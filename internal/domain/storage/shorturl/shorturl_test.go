@@ -15,7 +15,7 @@ import (
 
 func Test_Storage_FindShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockShortURLDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
 	ctx := context.Background()
 
@@ -50,7 +50,7 @@ func Test_Storage_FindShortURL_OK(t *testing.T) {
 
 func Test_Storage_FindShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockShortURLDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
 	ctx := context.Background()
 
@@ -84,7 +84,7 @@ func Test_Storage_FindShortURL_Errors(t *testing.T) {
 
 func Test_Storage_SaveShortURL_OK(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockShortURLDB(ctrl)
 	ctx := context.Background()
 
 	gen := entityMock.NewMockGenerator(ctrl)
@@ -120,7 +120,7 @@ func Test_Storage_SaveShortURL_OK(t *testing.T) {
 
 func Test_Storage_SaveShortURL_Errors(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockShortURLDB(ctrl)
 	ctx := context.Background()
 
 	gen := entityMock.NewMockGenerator(ctrl)
@@ -157,7 +157,7 @@ func Test_Storage_SaveShortURL_Errors(t *testing.T) {
 
 func Test_IsDBReady(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	db := storageMock.NewMockDB(ctrl)
+	db := storageMock.NewMockShortURLDB(ctrl)
 	gen := entityMock.NewMockGenerator(ctrl)
 	ctx := context.Background()
 

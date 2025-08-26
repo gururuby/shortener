@@ -4,34 +4,47 @@
     "read_timeout": "5s",
     "write_timeout": "10s",
     "idle_timeout": "120s",
+    "trusted_subnet": "127.0.0.1/24",
     "https": {
-      "enabled": true,
-      "certFile": "/path/to/cert.pem",
-      "keyFile": "/path/to/key.pem"
+      "enabled": false,
+      "cert_file": "/path/to/cert.pem",
+      "key_file": "/path/to/key.pem"
+    },
+    "grpc": {
+      "enabled": false,
+      "address": ":50051",
+      "connection_timeout": "120s",
+      "max_connection_idle": "2h",
+      "max_connection_age": "30m",
+      "max_connection_age_grace": "5m",
+      "keepalive_time": "2h",
+      "keepalive_timeout": "20s",
+      "min_keepalive_time": "10s",
+      "permit_without_stream": true
     }
   },
+  "file_storage": {
+    "path": "/path/to/storage.json"
+  },
+  "log": {
+    "level": "info"
+  },
   "app": {
-    "env": "production",
-    "name": "URL Shortener",
-    "version": "1.0.0",
-    "baseURL": "https://example.com",
-    "aliasLength": 6,
+    "env": "development",
+    "name": "Shortener",
+    "version": "0.0.1",
+    "base_url": "http://localhost:8080",
+    "alias_length": 5,
     "shutdown_timeout": "30s"
   },
   "auth": {
-    "secretKey": "secure-secret-key",
-    "tokenTTL": "72h"
+    "secret_key": "your-secret-key",
+    "token_ttl": "24h"
   },
   "database": {
-    "type": "postgres",
-    "dsn": "host=localhost user=postgres dbname=shortener sslmode=disable",
-    "connTryDelay": "10s",
-    "connTryTimes": 3
-  },
-  "fileStorage": {
-    "path": "/data/storage.json"
-  },
-  "log": {
-    "level": "debug"
+    "type": "postgresql",
+    "dsn": "host=localhost user=user password=pass dbname=shortener sslmode=disable",
+    "conn_try_delay": "5s",
+    "conn_try_times": 5
   }
 }
