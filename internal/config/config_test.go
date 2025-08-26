@@ -37,6 +37,18 @@ func TestConfig(t *testing.T) {
 					HTTPS: HTTPS{
 						Enabled: false,
 					},
+					GRPC: GRPC{
+						Enabled:               false,
+						ConnectionTimeout:     120 * time.Second,
+						Address:               ":50051",
+						MaxConnectionIdle:     2 * time.Hour,
+						MaxConnectionAge:      30 * time.Minute,
+						MaxConnectionAgeGrace: 5 * time.Minute,
+						KeepaliveTime:         2 * time.Hour,
+						KeepaliveTimeout:      20 * time.Second,
+						MinKeepaliveTime:      10 * time.Second,
+						PermitWithoutStream:   true,
+					},
 				},
 				Database: Database{
 					Type:         "file",

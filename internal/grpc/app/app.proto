@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package app;
+
+option go_package = "github.com/gururuby/shortener/internal/grpc/app";
+
+service AppService {
+  rpc PingDB(PingDBRequest) returns (PingDBResponse);
+}
+
+message PingDBRequest {}
+
+message PingDBResponse {
+  bool success = 1;
+  string error = 2;
+}

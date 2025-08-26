@@ -72,6 +72,21 @@ type Server struct {
 	WriteTimeout  time.Duration `env:"SERVER_WRITE_TIMEOUT" envDefault:"10s"`    // Maximum duration for writing response
 	IdleTimeout   time.Duration `env:"SERVER_IDLE_TIMEOUT" envDefault:"120s"`    // Maximum idle connection duration
 	HTTPS         HTTPS         // HTTPS-specific configuration
+	GRPC          GRPC          // GRPC-specific configuration
+}
+
+// GRPC contains GRPC server configuration
+type GRPC struct {
+	Enabled               bool          `env:"GRPC_ENABLED" envDefault:"false"`
+	ConnectionTimeout     time.Duration `env:"GRPC_CONNECTION_TIMEOUT" envDefault:"120s"`
+	Address               string        `env:"GRPC_ADDRESS" envDefault:":50051"`
+	MaxConnectionIdle     time.Duration `env:"GRPC_MAX_CONNECTION_IDLE" envDefault:"2h"`
+	MaxConnectionAge      time.Duration `env:"GRPC_MAX_CONNECTION_AGE" envDefault:"30m"`
+	MaxConnectionAgeGrace time.Duration `env:"GRPC_MAX_CONNECTION_AGE_GRACE" envDefault:"5m"`
+	KeepaliveTime         time.Duration `env:"GRPC_KEEPALIVE_TIME" envDefault:"2h"`
+	KeepaliveTimeout      time.Duration `env:"GRPC_KEEPALIVE_TIMEOUT" envDefault:"20s"`
+	MinKeepaliveTime      time.Duration `env:"GRPC_MIN_KEEPALIVE_TIME" envDefault:"10s"`
+	PermitWithoutStream   bool          `env:"GRPC_PERMIT_WITHOUT_STREAM" envDefault:"true"`
 }
 
 // Database contains database connection settings.
